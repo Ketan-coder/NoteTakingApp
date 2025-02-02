@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    Update Notebook
+{% endblock title %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'ckeditor/ckeditor/ckeditor.css' %}">
+    <style>
+        #id_title, #id_priority {
+            width: 100%;
+            display: block;
+            font-size: 18px;
+            border: none;
+            padding: 1%;
+        }
+        .errorlist {
+            list-style-type: none;
+            color: red;
+            font-size: 14px;
+            padding: 0;
+            margin: 0;
+            
+        }
+    </style>
+{% endblock head %}
+{% block body %}
+<div class="container mt-1">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Update Notebook</h2>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'update_notebook' notebook.id %}" method="post">
+                        {% csrf_token %}
+                        <p>1 - Most Priority | 5 - Least Priority</p>
+                        {{ form.as_p }}
+                        {{ form.media }}
+                        <div class="mt-3 align-items-end">
+                            <input type="submit" class="btn btn-primary" value="Update">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+{% block script %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script>
+        CKEDITOR.replace('id_body', {
+            width: '100%',
+            height: '300px',
+        });
+    </script>
+{% endblock script %}
+

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {{ title }}
+{% endblock title %}
+
+
+{% block head %}
+    <style>
+        #id_username, #id_email, #id_password1, #id_password2 {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #fff;
+        }
+        .errorlist {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            margin-bottom: 0;
+            list_style: none;
+
+        }
+    </style>
+{% endblock head %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{{ title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'register' %}" method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                            <a href="{% url 'login' %}">Back to Login</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}

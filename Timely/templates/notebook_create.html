@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Timely | Create Notebook
+{% endblock title %}
+
+{% block body %}
+<div class="m-3">
+    <div class="card">
+        <div class="card-body">
+            <h1 class="card-title">Create Notebook</h1>
+            <form method="post" enctype="multipart/form-data" class="notebook-form">
+                {% csrf_token %}
+                <div class="form-group m-1">
+                    <!-- <label for="id_title" class="form-label">Title:</label> -->
+                    <input type="text" id="id_title" name="title" class="form-control" placeholder="Enter title" style="border:none;font-size: 28px;">
+                </div>
+                <div class="form-group m-1">
+                    <!-- <label for="id_title" class="form-label">Title:</label> -->
+                    <input type="number" id="id_priority" name="priority" class="form-control" placeholder="Enter priority" style="border:none;font-size: 28px;">
+                </div>
+                {% comment %} <div class=" m-1">
+                    <label for="id_title" class="form-label">Title:</label>
+                    <input type="checkbox" id="id_is_password_protected" name="is_password_protected" class="form-control" placeholder="Add Password?">
+                </div> {% endcomment %}
+                <div class="form-check m-2">
+                    <input class="form-check-input" type="checkbox" value="is_password_protected" name="is_password_protected" id="id_is_password_protected">
+                    <label class="form-check-label" for="example-checkbox-1">
+                        Add Password Protection
+                    </label>
+                </div>
+                
+                <div class="form-group m-1" id="group-password">
+                        <label for="id_password" class="form-label">Password:</label>
+                        <input type="password" id="id_password" name="password" class="form-control" placeholder="Enter password" style="border:none;font-size: 28px;">
+                    </div>
+                
+                <div class="form-group m-1">
+                    <!-- <label for="id_body" class="form-label">Body:</label> -->
+                    <textarea id="id_body" name="body" class="form-control ckeditor"></textarea>
+                </div>
+                <div class="m-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-lg ms-auto">Save</button>
+                    <!-- <button class="btn btn-primary" type="button" disabled>
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Loading...
+                    </button> -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'ckeditor/ckeditor/ckeditor.css' %}">
+{% endblock head %}
+
+{% block script %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script>
+
+        var passwordInput = document.getElementById('group-password');
+        passwordInput.style.display = 'none';
+        CKEDITOR.replace('id_body', {
+            width: '100%',
+            height: '300px', // You can adjust the height as needed
+            // Add other CKEditor configuration options here
+        });
+        // JavaScript to show/hide password input
+        document.getElementById('id_is_password_protected').addEventListener('change', function() {
+            passwordInput.style.display = this.checked ? 'block' : 'none';
+        });
+    </script>
+{% endblock script %}
+
+<style>
+    /* Optional: Adjust form control styles for consistency */
+    .form-control {
+        width: 100%;
+    }
+
+    /* Optional: Style CKEditor toolbar and content area */
+    .cke_toolbar {
+        background-color: #f8f9fa;
+    }
+    .cke_contents {
+        border: 1px solid #ced4da;
+    }
+</style>
+{% endblock body %}

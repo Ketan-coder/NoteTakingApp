@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ notebook.title }}'s PDF</title>
+    <script src="https://kit.fontawesome.com/2058ad717c.js" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css" rel="stylesheet" integrity="sha256-SsJizWSIG9JT9Qxbiy8xnYJfjCAkhEQ0hihxRn7jt2M=" crossorigin="anonymous">
+    <link href="{% static 'vendors/css/halfmoon.css' %}" rel="stylesheet" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.2;
+            margin: 20px; /* Reduced margin */
+            font-size: 1.4rem;
+        }
+        h1, h2, h3 {
+            margin-top: 10px; /* Reduced top margin for headings */
+        }
+        h1{
+            font-size: 40px;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        h2{
+            font-size: 18px;
+        }
+        p, ul, ol,li,a{
+            margin-bottom: 1px;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+        .index-list {
+            margin-bottom: 10px; /* Reduced margin */
+        }
+        .index-list ul {
+            list-style-type: none; /* Remove default list style */
+            padding: 0; /* Remove default padding */
+        }
+        .index-list li {
+            font-size: 16px;
+        }
+
+        .index-list a {
+            display: block;
+            margin-bottom: 3px; /* Reduced margin */
+            font-size: 18px;
+        }
+        .content-body {
+            margin-left: 20px; /* Add margin to content body */
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ notebook.title }}</h1>
+
+    <!-- Index of Pages and Subpages -->
+    <div class="index-list">
+        <h2>Index</h2>
+        <ul>
+            {% for page in pages %}
+                <li style="margin-bottom: 1px;font-size: 16px;"><a href="#page-{{ page.id }}"> &rarr; {{ page.title }}</a></li>
+                {% for subpage in page.subpage_set.all %}
+                    <li style="margin-left: 15px;font-size: 16px;"><a href="#subpage-{{ subpage.id }}">---&rarr; {{ subpage.title }}</a></li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="page-break"></div>
+    <h2>{{notebook.title}}'s Content</h2>
+    <p class="content-body">{{ notebook.body|safe }}</p>
+     
+
+    <!-- Pages -->
+    {% for page in pages %}
+        <div class="page-break"></div>
+        <h2 id="page-{{ page.id }}"><i class="fas fa-book-open"></i> &ensp;{{ page.title }}</h2>
+        <p class="content-body ms-5">{{ page.body|safe }}</p>
+        
+        <!-- Subpages -->
+        {% for subpage in page.subpages.all %}
+            <div class="page-break"></div>
+            <h3 id="subpage-{{ subpage.id }}" class="ms-2"><i class="fas fa-book-open"></i> &ensp;{{ subpage.title }}</h3>
+            <p class="content-body ms-5">{{ subpage.body|safe }}</p>
+        {% endfor %}
+    {% endfor %}
+
+    <!-- Notebook's Body -->
+    
+</body>
+</html>

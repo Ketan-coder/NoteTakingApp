@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block body %}
+    
+    {% if notebook.is_password_protected == true and notebook.is_password_entered == false %}
+
+        <h2 class="m-2">Notebook is password protected</h2>
+        <form class="container-sm" method="POST">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="notebook_password" name="notebook_password" placeholder="Password" required>
+            <a class="btn btn-link" href="">Forgot password?</a>
+            {% comment %} <a class="btn btn-link" href="{% url 'forgot_password' notebook.pk %}">Forgot password?</a> {% endcomment %}
+          </div>
+          <div class="mb-3 pb-3">
+            <button type="submit" class="btn btn-primary w-100">Unlock the Notebook</button>
+          </div>
+        </form>
+
+        {% else %}
+        <h2>Notebook is not password protected</h2>
+    {% endif %}
+        
+{% endblock body  %}

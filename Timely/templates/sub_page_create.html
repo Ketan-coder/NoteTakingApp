@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Timely | Create Sub Page
+{% endblock title %}
+
+{% block body %}
+<div class="m-3">
+    <div class="card">
+        <div class="card-body">
+            <h1 class="card-title">Create Sub Page</h1>
+            <form method="post" enctype="multipart/form-data" class="notebook-form">
+                {% csrf_token %}
+                <div class="form-group m-1">
+                    <!-- <label for="id_title" class="form-label">Title:</label> -->
+                    <input type="text" id="id_title" name="title" class="form-control" placeholder="Enter title" style="border:none;font-size: 28px;">
+                </div>
+                <div class="form-group m-1">
+                    <!-- <label for="id_body" class="form-label">Body:</label> -->
+                    <textarea id="id_body" name="body" class="form-control ckeditor"></textarea>
+                </div>
+                <div class="m-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-lg ms-auto">Save</button>
+                    <!-- <button class="btn btn-primary" type="button" disabled>
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Loading...
+                    </button> -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'ckeditor/ckeditor/ckeditor.css' %}">
+{% endblock head %}
+
+{% block script %}
+    <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+    <script>
+        CKEDITOR.replace('id_body', {
+            width: '100%',
+            height: '300px', // You can adjust the height as needed
+            // Add other CKEditor configuration options here
+        });
+    </script>
+{% endblock script %}
+
+<style>
+    /* Optional: Adjust form control styles for consistency */
+    .form-control {
+        width: 100%;
+    }
+
+    /* Optional: Style CKEditor toolbar and content area */
+    .cke_toolbar {
+        background-color: #f8f9fa;
+    }
+    .cke_contents {
+        border: 1px solid #ced4da;
+    }
+</style>
+{% endblock body %}

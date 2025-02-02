@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Timely | Update Sticky Notes
+{% endblock title %}
+
+{% block head %}
+    <style>
+        #id_title, #id_body {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #fff;
+        }
+    </style>
+{% endblock head %}
+
+{% block body %}
+<div class="m-3">
+    <div class="card">
+        <div class="card-body">
+            <h1 class="card-title">Update Sticky Notes</h1>
+            <form action="{% url 'update_sticky_notes' stickynote.id %}" method="post">
+                {% csrf_token %}
+                <div class="form-group m-2 p-2">
+                    {{ form.title.label_tag }}
+                    {{ form.title }}
+                </div>
+                <div class="form-group m-2 p-2">
+                    {{ form.body.label_tag }}
+                    {{ form.body }}
+                </div>
+                <!-- Add any other fields from StickyNotesForm as needed -->
+                <div class="form-group align-items-end">
+                    <input type="submit" value="Update" class="btn btn-primary">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock body %}

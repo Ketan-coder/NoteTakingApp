@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block body %}
+<!-- Loading Spinner -->
+<div id="loading-spinner" class="text-center position-absolute top-50 start-50 translate-middle">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+
+<div class="container mt-4">
+  <h1 class="mb-4" id="search-page">Searching Results for "{{ query }}"</h1>
+  <h1 class="mb-4" id="search-page_show">Showing Results for "{{ query }}"</h1>
+
+  <div id="search-results" style="display: none;">
+    {% if results %}
+      <div class="row">
+        <div class="col-md-6">
+          <h2>Notebooks</h2>
+          <ul class="list-group">
+            {% for notebook in results.notebooks %}
+              <li class="list-group-item">{{ notebook.title }}</li>
+              <!-- Modal for Notebook Detail -->  
+              <div class="modal fade" id="notebookModal{{ notebook.id }}" tabindex="-1" aria-labelledby="notebookModalLabel{{ notebook.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="notebookModalLabel{{ notebook.id }}">Notebook Detail</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <h3>{{ notebook.title }}</h3>
+                      <p>{{ notebook.body }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- End of Modal for Notebook Detail -->
+              {% empty%}
+                <li class="list-group-item ms-4 m-1">No Notebooks Found</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="col-md-6">
+          <h2>Pages</h2>
+          <ul class="list-group">
+            {% for page in results.pages %}
+              <li class="list-group-item"><a href="#pageModal{{ page.detail.id }}" data-bs-toggle="modal">{{ page.breadcrumb }}</a></li>
+              <!-- Modal for Page Detail -->
+              <div class="modal fade" id="pageModal{{ page.detail.id }}" tabindex="-1" aria-labelledby="pageModalLabel{{ page.detail.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="pageModalLabel{{ page.detail.id }}">Page Detail</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <h3>{{ page.detail.title }}</h3>
+                      <p>{{ page.detail.body|safe }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- End of Modal for Page Detail -->
+              <h5 class="mt-2 ms-3">Sub-Pages</h5>
+              {% for subpage in page.detail.subpage_set.all %}
+              
+                <li class="list-group-item ms-4 m-1"><a href="#subpageModal{{ subpage.id }}" data-bs-toggle="modal">{{ subpage.title }}</a></li>
+                <!-- Modal for Subpage Detail -->
+                <div class="modal fade" id="subpageModal{{ subpage.id }}" tabindex="-1" aria-labelledby="subpageModalLabel{{ subpage.id }}" aria-hidden="true">
+                  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="subpageModalLabel{{ subpage.id }}">Subpage Detail</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <h3>{{ subpage.title }}</h3>
+                        <p>{{ subpage.body|safe }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- End of Modal for Subpage Detail -->
+                {% empty%}
+                <li class="list-group-item ms-4 m-1">No Pages or Sub pages Found</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <h2>Remainders</h2>
+        <ul class="list-group">
+          {% for remainder in results.remainders %}
+            <li class="list-group-item">{{ remainder.title }}</li>
+            {% empty%}
+                <li class="list-group-item ms-4 m-1">No Remainders Found</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% else %}
+      <div class="alert alert-info mt-4" role="alert">
+        No search records found.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+  // Hide everything except the loading spinner initially
+  document.getElementById('search-page_show').style.display = 'none';
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('search-page').style.display = 'block';
+
+  // Hide the loading spinner after 2 seconds and show the search results
+  setTimeout(function() {
+    document.getElementById('loading-spinner').style.display = 'none';
+    document.getElementById('search-results').style.display = 'block';
+    document.getElementById('search-page_show').style.display = 'block';
+    document.getElementById('search-page').style.display = 'none';
+  }, 2000);
+</script>
+
+{% endblock body %}

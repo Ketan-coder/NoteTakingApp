@@ -1,0 +1,39 @@
+# Ignore virtual environment
+Timely/env/
+
+# Ignore environment variables and secrets
+Timely/.env
+Timely/*.env
+Timely/IDPassword.txt
+
+# Ignore Python compiled files
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Ignore Django migrations except __init__.py
+**/migrations/
+!**/migrations/__init__.py
+
+# Ignore database files (if using SQLite)
+Timely/db.sqlite3
+
+# Ignore media and static files (optional)
+Timely/media/
+Timely/staticfiles/
+Timely/JSONFiles/*.json
+Timely/staticfiles.zip
+
+# Ignore zip backups
+Timely/*.zip
+Timely/static/*.zip
+
+# Ignore unnecessary scripts (optional)
+Django_automation.py
+WebsiteTester.py
+
+# Ignore IDE and system files
+.vscode/
+.idea/
+*.swp
+.DS_Store

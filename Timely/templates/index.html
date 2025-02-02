@@ -1,0 +1,785 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Timely
+{% endblock title %}
+
+{% block body %}
+<!-- JavaScript tab plugin (alternate markup) -->
+<div class="m-2">
+<nav>
+  <div class="nav nav-tabs" id="js-tabs-2" role="tablist">
+    <button class="nav-link active " id="nav-notes-tab" data-bs-toggle="tab" data-bs-target="#nav-notes" type="button" role="tab" aria-controls="nav-home" aria-selected="true">All Notes</button>
+    <button class="nav-link" id="nav-remainders-tab" data-bs-toggle="tab" data-bs-target="#nav-remainders" type="button" role="tab" aria-controls="nav-remainders" aria-selected="false">Reminders</button>
+    <button class="nav-link" id="nav-shared-tab" data-bs-toggle="tab" data-bs-target="#nav-shared" type="button" role="tab" aria-controls="nav-shared" aria-selected="false">Shared</button>
+    <button class="nav-link" id="nav-favourites-tab" data-bs-toggle="tab" data-bs-target="#nav-favourites" type="button" role="tab" aria-controls="nav-favourites" aria-selected="false">Favourites</button>
+    <!-- <button class="nav-link" id="nav-highlights-tab" data-bs-toggle="tab" data-bs-target="#nav-highlights" type="button" role="tab" aria-controls="nav-highlights" aria-selected="false">Highlights</button> -->
+    <button class="nav-link" id="nav-activity-tab" data-bs-toggle="tab" data-bs-target="#nav-activity" type="button" role="tab" aria-controls="nav-activity" aria-selected="false">Activity</button>
+    <!-- <button class="nav-link disabled" id="nav-disabled-tab" data-bs-toggle="tab" data-bs-target="#nav-disabled" type="button" role="tab" aria-controls="nav-disabled" aria-selected="false" disabled>Tasks</button> -->
+  </div>
+</nav>
+<div class="tab-content" id="js-tabs-content-2">
+  <div class="tab-pane fade show active" id="nav-notes" role="tabpanel" aria-labelledby="nav-notes-tab" tabindex="0">
+    {% comment %} floatingActionButton  {% endcomment %}
+    <div class="fab-container" style="bottom: 20px; right: 20px; position: fixed;">
+        <a href="{% url 'create_notebook' %}" class="fab-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" style="width: 21px;margin-right: 5%;margin-bottom: 2%;"><path fill="#fff" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M256 112v288M400 256H112" /></svg> New Notebook
+        </a>
+        {% comment %} <a href="" class="fab-btn">
+            <i class="fas fa-plus"> </i> Change Sticky Note
+        </a> {% endcomment %}
+    </div>
+    <div class="m-3 p-1">
+        <div class="row mobile_col">
+            <div class="col-3">
+                <h3>Sticky Notes</h3>
+                <!-- Spinner Card -->
+                <!-- Horizontally centered using flexbox -->
+                <!-- <div class="m-5 d-flex justify-content-center">
+                    <div class="spinner-border specific-w-50 specific-h-50" role="status">
+                        <span class="visually-hidden"></span>
+                    </div>
+                </div> -->
+                <!-- Spinner Card -->
+            {% for stickynotes in sticky_notes %}
+            <div class="card text-bg-warning border-0 rounded-3 specific-w-300 mx-auto">
+              <div class="card-body">
+                  <h5 class="card-title">
+                  {% comment %} <i class="fas fa-lightbulb me-1"></i>  {% endcomment %}
+                  <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#000" style="width: 15px;">
+                    <path d="M288 464h-64a16 16 0 000 32h64a16 16 0 000-32zM304 416h-96a16 16 0 000 32h96a16 16 0 000-32zM369.42 62.69C339.35 32.58 299.07 16 256 16A159.62 159.62 0 0096 176c0 46.62 17.87 90.23 49 119.64l4.36 4.09C167.37 316.57 192 339.64 192 360v24a16 16 0 0016 16h24a8 8 0 008-8V274.82a8 8 0 00-5.13-7.47A130.73 130.73 0 01208.71 253a16 16 0 1118.58-26c7.4 5.24 21.65 13 28.71 13s21.31-7.78 28.73-13a16 16 0 0118.56 26 130.73 130.73 0 01-26.16 14.32 8 8 0 00-5.13 7.47V392a8 8 0 008 8h24a16 16 0 0016-16v-24c0-19.88 24.36-42.93 42.15-59.77l4.91-4.66C399.08 265 416 223.61 416 176a159.16 159.16 0 00-46.58-113.31z"/>
+                  </svg>
+                  {{stickynotes.title}} #{{stickynotes.id}}
+                  </h5>
+                  <p class="card-text">
+                      {{stickynotes.body}}
+                  </p>
+                  <div class="text-end">
+                    <a href="{% url 'update_sticky_notes' stickynotes.id %}" class="btn btn-light">
+                         Change
+                    </a>
+                  <!-- <a href="#" class="text-reset">Don't show again</a> -->
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+            </div>
+            <div class="col-8 offset-1 m-1">
+                <h3>Recents Notebooks</h3>
+                <!-- Spinner Card -->
+                <!-- Horizontally centered using flexbox -->
+                <!-- <div class="m-5 d-flex justify-content-center">
+                    <div class="spinner-border specific-w-50 specific-h-50" role="status">
+                        <span class="visually-hidden"></span>
+                    </div>
+                </div> -->
+                <!-- Spinner Card -->
+                <div class="card">
+                    <ul class="list-group list-group-flush">
+                        {% for notebook in notebooks|slice:"3" %}
+                      <li class="list-group-item p-3">
+                        <b style="font-weight: 500;">
+                        {% comment %} {% if notebook.is_password_protected %}
+                          <a href="" style="text-decoration: none;">
+                          {% else %}
+                          <a href="#{{notebook.title}}" style="text-decoration: none;" data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.id }}">
+                        {% endif %} {% endcomment %}
+                          <a 
+                          {% if notebook.is_password_protected %}
+                            style="text-decoration: none;" 
+                              href="{% url 'verify_password' notebook.id %}"
+                              {% else %}
+                              href="#{{notebook.title}}"
+                              data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.id }}"
+                              style="text-decoration: none;color:hsl(216,100%,60%);cursor:pointer;"
+                          {% endif %}
+                             >
+                            
+                             
+                                
+                          {% if notebook.priority < 2 %}
+                          <span class="badge rounded-pill" style="background-color: #ff4a4a;margin-right: 1%; font-weight: bold;">
+                            {% comment %} <i class="fas fa-arrow-up"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
+                              <path d="M414 321.94L274.22 158.82a24 24 0 00-36.44 0L98 321.94c-13.34 15.57-2.28 39.62 18.22 39.62h279.6c20.5 0 31.56-24.05 18.18-39.62z"/>
+                            </svg>
+                              
+                          {% else %}
+                          <span class="badge rounded-pill" style="margin-right: 1%;font-weight: bold;">
+                            {% comment %} <i class="fas fa-arrow-down"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
+                              <path d="M98 190.06l139.78 163.12a24 24 0 0036.44 0L414 190.06c13.34-15.57 2.28-39.62-18.22-39.62h-279.6c-20.5 0-31.56 24.05-18.18 39.62z"/>
+                            </svg>
+                          {% endif %}
+                          </span>
+                          {% if notebook.is_accessed_recently %}
+                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;">
+                               <path d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208 208-93.31 208-208S370.69 48 256 48zm120 182.15a8.62 8.62 0 01-8.62 8.62h-59.54a8.61 8.61 0 01-6.09-14.71l22.17-22.17-5.6-6.51a87.38 87.38 0 10-62.94 148 87.55 87.55 0 0082.42-58.25A16 16 0 11368 295.8a119.4 119.4 0 11-112.62-159.18 118.34 118.34 0 0186.36 36.95l.56.62 4.31 5 14.68-14.68a8.44 8.44 0 016-2.54 8.61 8.61 0 018.68 8.63z"/>
+                              </svg>
+                              {% endif %}
+                          {% if notebook.is_favourite %}
+                            {% comment %} <i class="fas fa-star text-warning"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#ff0" style="width: 15px;">
+                              <path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/>
+                            </svg>
+                          {% endif %}
+                          {% if notebook.is_password_protected %}
+                            {% comment %} <i class="fas fa-lock text-danger"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;">
+                              <path d="M368 192h-16v-80a96 96 0 10-192 0v80h-16a64.07 64.07 0 00-64 64v176a64.07 64.07 0 0064 64h224a64.07 64.07 0 0064-64V256a64.07 64.07 0 00-64-64zm-48 0H192v-80a64 64 0 11128 0z"/>
+                            </svg>
+                            {% comment %} <i class="fas fa-link"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
+                               <path d="M208 352h-64a96 96 0 010-192h64M304 160h64a96 96 0 010 192h-64M163.29 256h187.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="36"/>
+                            </svg>                          {% endif %}
+                          {% if notebook.is_shared %}
+                            {% comment %} <i class="fas fa-share-alt"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
+                              <path d="M384 336a63.78 63.78 0 00-46.12 19.7l-148-83.27a63.85 63.85 0 000-32.86l148-83.27a63.8 63.8 0 10-15.73-27.87l-148 83.27a64 64 0 100 88.6l148 83.27A64 64 0 10384 336z"/>
+                            </svg>
+                          {% endif %}&ensp;
+                          {% comment %} <i class="fas fa-book"></i>   {% endcomment %}
+                          
+                          {{notebook.title}}
+                          <!-- <svg style="width: 1.5%;margin-left: 1%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.<path fill="#3385ff" d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg> -->
+                        </b></a></li>
+                      {% endfor %}
+                    </ul>
+                    </div>
+
+            </div>
+        </div>
+        <!-- All Notebooks -->
+        <div class="row m-2">
+            <div class="col">
+                    <h3>All Notebooks</h3>
+                    
+              
+                      
+                <!-- Spinner Card -->
+                <!-- Horizontally centered using flexbox -->
+                <!-- <div class="m-5 d-flex justify-content-center">
+                    <div class="spinner-border specific-w-50 specific-h-50" role="status">
+                        <span class="visually-hidden"></span>
+                    </div>
+                </div> -->
+                <!-- Spinner Card -->
+                <div class="card">
+                    <ul class="list-group list-group-flush">
+                      {% for notebook in notebooks_list_priority %}
+                      <li class="list-group-item p-3">
+                          <b style="font-weight: 500;">
+                        <a 
+                          {% if notebook.is_password_protected %}
+                            style="text-decoration: none;" 
+                              href="{% url 'verify_password' notebook.id %}"
+                              {% else %}
+                              href="#{{notebook.title}}"
+                              data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.id }}"
+                              style="text-decoration: none;color:hsl(216,100%,60%);cursor:pointer;"
+                          {% endif %}
+                             >
+                          {% if notebook.priority < 2 %}
+                          <span class="badge rounded-pill" style="background-color: #ff4a4a;margin-right: 1%; font-weight: bold;">
+                            {% comment %} <i class="fas fa-arrow-up"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
+                              <path d="M414 321.94L274.22 158.82a24 24 0 00-36.44 0L98 321.94c-13.34 15.57-2.28 39.62 18.22 39.62h279.6c20.5 0 31.56-24.05 18.18-39.62z"/>
+                            </svg>
+                              
+                          {% else %}
+                          <span class="badge rounded-pill" style="margin-right: 1%;font-weight: bold;">
+                            {% comment %} <i class="fas fa-arrow-down"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
+                              <path d="M98 190.06l139.78 163.12a24 24 0 0036.44 0L414 190.06c13.34-15.57 2.28-39.62-18.22-39.62h-279.6c-20.5 0-31.56 24.05-18.18 39.62z"/>
+                            </svg>
+                          {% endif %}
+                          </span>
+                          {% if notebook.is_accessed_recently %}
+                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;">
+                               <path d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208 208-93.31 208-208S370.69 48 256 48zm120 182.15a8.62 8.62 0 01-8.62 8.62h-59.54a8.61 8.61 0 01-6.09-14.71l22.17-22.17-5.6-6.51a87.38 87.38 0 10-62.94 148 87.55 87.55 0 0082.42-58.25A16 16 0 11368 295.8a119.4 119.4 0 11-112.62-159.18 118.34 118.34 0 0186.36 36.95l.56.62 4.31 5 14.68-14.68a8.44 8.44 0 016-2.54 8.61 8.61 0 018.68 8.63z"/>
+                              </svg>
+                              {% endif %}
+                          {% if notebook.is_favourite %}
+                            {% comment %} <i class="fas fa-star text-warning"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#ff0" style="width: 15px;">
+                              <path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/>
+                            </svg>
+                          {% endif %}
+                          {% if notebook.is_password_protected %}
+                            {% comment %} <i class="fas fa-lock text-danger"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;">
+                              <path d="M368 192h-16v-80a96 96 0 10-192 0v80h-16a64.07 64.07 0 00-64 64v176a64.07 64.07 0 0064 64h224a64.07 64.07 0 0064-64V256a64.07 64.07 0 00-64-64zm-48 0H192v-80a64 64 0 11128 0z"/>
+                            </svg>
+                            {% comment %} <i class="fas fa-link"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
+                               <path d="M208 352h-64a96 96 0 010-192h64M304 160h64a96 96 0 010 192h-64M163.29 256h187.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="36"/>
+                            </svg>                          {% endif %}
+                          {% if notebook.is_shared %}
+                            {% comment %} <i class="fas fa-share-alt"></i> {% endcomment %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
+                              <path d="M384 336a63.78 63.78 0 00-46.12 19.7l-148-83.27a63.85 63.85 0 000-32.86l148-83.27a63.8 63.8 0 10-15.73-27.87l-148 83.27a64 64 0 100 88.6l148 83.27A64 64 0 10384 336z"/>
+                            </svg>
+                          {% endif %}&ensp;
+                          {% comment %} <i class="fas fa-book"></i>   {% endcomment %}
+
+                          {{notebook.title}}
+                          <!-- <svg style="width: 1.5%;margin-left: 1%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.<path fill="#3385ff" d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg> -->
+                          </b>
+                        </a></li>
+                      {% endfor %}
+                    </ul>
+                    </div>
+            </div>
+            
+        </div>
+        <div class="row m-2">
+          <div class="col">
+            <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-center">
+                    {% if notebooks.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?notebook_page=1" aria-label="First">
+                                <span aria-hidden="true"><i class="fas fa-angle-double-left"></i></span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?notebook_page={{ notebooks.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true"><i class="fas fa-angle-left"></i></span>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% for num in notebooks.paginator.page_range %}
+                        {% if notebooks.number == num %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?notebook_page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if notebooks.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?notebook_page={{ notebooks.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true"><i class="fas fa-angle-right"></i></span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?notebook_page={{ notebooks.paginator.num_pages }}" aria-label="Last">
+                                <span aria-hidden="true"><i class="fas fa-angle-double-right"></i></span>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+          </div>
+        </div>
+        </div>
+        
+    </div>
+    <div class="tab-pane fade" id="nav-shared" role="tabpanel" aria-labelledby="nav-shared-tab" tabindex="0">
+    <div >
+        <div class="m-3">
+          <h2>Shared Notebooks</h2>
+        <div class="row">
+            <div class="card">
+                    <ul class="list-group list-group-flush">
+                      {% for notebook in sharedNotebooks %}
+                      <li class="list-group-item p-3">
+                        {% if notebook.notebook.is_shared %}
+                        <!-- <i class="fas fa-share-alt"></i>  -->
+                        <a href="{% url 'stopSharingNotebook' notebook.id %}" style="text-decoration: none;margin-right: 1%;"><span class="badge rounded-pill">Stop Sharing</span></a>
+                        {% endif %}
+                        <a href="" style="text-decoration: none;" data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.notebook.id }}">
+                          {% comment %} <i class="fas fa-book"></i> {% endcomment %}
+                           &ensp;{{notebook.notebook.title}}
+                          <!-- <svg style="width: 1.5%;margin-left: 1%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.<path fill="#3385ff" d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg> -->
+                        </a>&ensp;&ensp; <a href="https://timely.pythonanywhere.com/{{notebook.shareable_link}}" onClick="window.open(this.href); return false;">Shareable Link - https://timely.pythonanywhere.com/{{notebook.shareable_link}}</a></li>
+                      {% endfor %}
+                    </ul>
+                    </div>
+        </div>
+        </div>
+  </div>
+  </div>
+      <div class="tab-pane fade" id="nav-favourites" role="tabpanel" aria-labelledby="nav-favourites-tab" tabindex="0">
+    <div class="m-3">
+      <h3>All Favourites</h3>
+      {% for favourite in favouritesNotebooks %}
+      <div class="card">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item p-3">
+              <h5><a href="" data-bs-toggle="modal" data-bs-target="#example-modal-{{ favourite.id }}"><span class="badge rounded-pill" style="background-color: #ff4a4a;"> <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;"><path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/></svg> </span>  {{ favourite.title }}</a></h5>
+              <!--<p>{{ favourite.body|safe }}</p>-->
+              <span class="badge rounded-pill text-bg-dark">At - {{ favourite.updated_at }}</span>
+              </li>
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <!-- <div class="tab-pane fade" id="nav-highlights" role="tabpanel" aria-labelledby="nav-highlights-tab" tabindex="0">
+    <div >
+        <h3>Highlights</h3>
+        <div class="row">
+
+    </div>
+  </div>
+  </div> -->
+  <!-- <div class="tab-pane fade" id="nav-activity" role="tabpanel" aria-labelledby="nav-activity-tab" tabindex="0">
+    <div class="m-3">
+      <h3>All Activity</h3>
+      {% for activity in activities %}
+      <div class="card">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item p-3">
+              <h5> <span class="badge rounded-pill" style="background-color: #ff4a4a;"> <i class="fas fa-exclamation" style="color:white;"></i> </span>   {{ activity.title }}</h5>
+              <p>{{ activity.body }}</p>
+              <span class="badge rounded-pill text-bg-dark">At - {{ activity.updated_at }}</span>
+              </li>
+        </ul>
+      </div>
+      
+      {% endfor %}
+      
+    </div>
+  </div> -->
+  <div class="tab-pane fade" id="nav-activity" role="tabpanel" aria-labelledby="nav-activity-tab" tabindex="0">
+    <div class="m-3">
+        <h3>All Activity</h3>
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-center">
+                {% if activities.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="First">
+                            <span aria-hidden="true"><i class="fas fa-angle-double-left"></i></span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ activities.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true"><i class="fas fa-angle-left"></i></span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for num in activities.paginator.page_range %}
+                    {% if activities.number == num %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if activities.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ activities.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true"><i class="fas fa-angle-right"></i></span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ activities.paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true"><i class="fas fa-angle-double-right"></i></span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% for activity in activities %}
+        <div class="card">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item p-3">
+                    <h5>
+                        <span class="badge rounded-pill" style="background-color: #ff4a4a;">
+                            <i class="fas fa-exclamation" style="color:white;"></i>
+                        </span>
+                        {{ activity.title }}
+                    </h5>
+                    <p>{{ activity.body }}</p>
+                    <span class="badge rounded-pill text-bg-dark">At - {{ activity.updated_at }}</span>
+                </li>
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</div>
+  <!-- Notebook Modal -->
+<!-- Notebook Modal -->
+<!-- Notebook Modal -->
+<!-- Modal with form -->
+
+
+{% for notebook in notebooks %}
+
+{% comment %} {% if notebook.author.id == logined_profile.id %}
+  hello
+{% elif notebook.is_shared == True %}
+ no hello
+{% endif %} {% endcomment %}
+
+{% if notebook.author.id != logined_profile.id %}
+  {% else %}
+<div class="modal fade" id="example-modal-{{ notebook.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-{{ notebook.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-3" id="modal-title-{{ notebook.id }}"> <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 25px;"><path d="M202.24 74C166.11 56.75 115.61 48.3 48 48a31.36 31.36 0 00-17.92 5.33A32 32 0 0016 79.9V366c0 19.34 13.76 33.93 32 33.93 71.07 0 142.36 6.64 185.06 47a4.11 4.11 0 006.94-3V106.82a15.89 15.89 0 00-5.46-12A143 143 0 00202.24 74zM481.92 53.3A31.33 31.33 0 00464 48c-67.61.3-118.11 8.71-154.24 26a143.31 143.31 0 00-32.31 20.78 15.93 15.93 0 00-5.45 12v337.13a3.93 3.93 0 006.68 2.81c25.67-25.5 70.72-46.82 185.36-46.81a32 32 0 0032-32v-288a32 32 0 00-14.12-26.61z"/></svg> &ensp;{{ notebook.title }}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="row">
+          <div class="col-3">
+                      <!-- First collapse -->
+                <div class="m-2 position-fixed" style="width: 17%;">
+                  <button type="button" class="btn btn-link d-flex align-items-baseline" data-bs-toggle="collapse" data-bs-target="#collapse-example-{{ notebook.id }}" aria-expanded="true" aria-controls="collapse-example-{{ notebook.id }}">
+                  <i class="fas fa-book-open"></i> &ensp;Pages
+                </button>
+                <div class="collapse show" id="collapse-example-{{ notebook.id }}">
+                  <div class="ps-4 mt-2">
+                    <ul class="list-unstyled mb-0">
+                      {% for page in notebook.page_set.all %}
+                      <li class="p-1">&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-page-{{ page.id }}">{{ page.title }}</a></li>
+                        <ul class="list-unstyled mb-1">
+                          {% for subpage in page.subpage_set.all %}
+                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}">{{ subpage.title }}</a></li>
+                          {% endfor %}
+                        </ul>
+                      {% empty %}
+                      <li class="p-1">&ndash; No Pages</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+                </div>
+          </div>
+          <div class="col-9">
+            {{ notebook.body|safe }}
+          </div>
+    </div>
+        <!-- Pop Over -->
+        <!-- <div class="mb-4">
+          <button type="button" class="btn" data-bs-toggle="popover" data-bs-title="Title of the popover" data-bs-content="Content of the popover that spans across multiple lines.">
+            Popover
+          </button>
+        </div> -->
+        <!-- Pop Over -->
+
+      </div>
+
+      <div class="modal-footer">
+        <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+
+        {% if notebook.author.id != logined_profile.id %}
+        {% else %}
+          <a href="{% url 'create_page' pk=notebook.id %}" class="btn btn-info">Add Page</a>
+          <a href="{% url 'update_notebook' pk=notebook.id %}" class="btn btn-primary">Edit</a>
+          <a href="{% url 'generate_pdf' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export PDF</a>
+          <a href="{% url 'exportNotebookToJson' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export JSON</a>
+          
+          {% if notebook.is_password_protected %}
+            <a disabled href="" class="btn disabled"><i class="fas fa-share-alt"></i> Notebook is Password Protected</a>
+          {% else %}
+            {% if notebook.is_shared %}
+              {% comment %} <a href="{% url 'stopSharingNotebook' pk=notebook.id %}" class="btn btn-outline-info disabled"><i class="fas fa-share-alt" disabled></i> Shared Already</a> {% endcomment %}
+            {% else %}
+              <a href="{% url 'startingSharedNotebooks' pk=notebook.id %}" class="btn btn-outline-info"><i class="fas fa-share-alt"></i> Share this Notebook</a>
+            {% endif %} 
+          {% endif %}
+
+          {% if notebook.is_favourite %}
+          <a href="{% url 'removeToFavourites' pk=notebook.id %}" class="btn btn-outline-info"> Removed From Favourites</a>
+            {% else %}
+            <a href="{% url 'addToFavourites' pk=notebook.id %}" class="btn btn-outline-info"><i class="fas fa-heart"></i> Add to Favourites</a>
+          {% endif %}
+
+            {% if notebook.priority == 0 or notebook.priority == 1 or notebook.priority == 2 %}
+              <a href="{% url 'decrementPriority' pk=notebook.id %}" class="btn btn-outline-warning"><i class="fas fa-arrow-down"></i> Decrease Priority</a>
+            {% else %}
+              <a href="{% url 'incrementPriority' pk=notebook.id %}" class="btn btn-outline-warning"><i class="fas fa-arrow-up"></i> Increase Priority</a>
+            {% endif %}
+
+
+          {% if notebook.author.id == logined_profile.id %}
+          <a href="" data-bs-toggle="modal" data-bs-target="#deleteModal-{{ notebook.id }}" class="btn btn-outline-danger">Delete Notebook</a>
+          {% else %}
+          <a href="" class="btn btn-outline-danger">You cannot Delete</a>
+          {% endif %}
+
+        {% endif %}
+
+        <!-- spinner button -->
+        <!-- <button class="btn btn-primary" type="button" disabled>
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Loading...
+        </button> -->
+        <!-- spinner button -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+
+{% for notebook in notebooks %}
+<div class="modal fade" id="deleteModal-{{ notebook.id }}" tabindex="-1" aria-labelledby="deleteModalLabel-{{ notebook.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel-{{ notebook.id }}">Delete Notebook</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the notebook &ensp;<i class="fas fa-book"></i>"{{ notebook.title }}"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'deleteNotebook' notebook.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirmed" value="true">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+
+  <!-- Pages Modal -->
+{% for page in pages %}
+<div class="modal fade" id="example-modal-page-{{ page.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-page-{{ page.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+          <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}"> <i class="fas fa-arrow-left"></i> </button>
+        <h1 class="modal-title fs-3" id="modal-title-2"><i class="fas fa-book-open"></i> &ensp;{{ page.title }}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-3">
+                  <!-- First collapse -->
+                <div class="m-2 position-fixed" style="width: 16%;">
+                  <button type="button" class="btn btn-link d-flex align-items-baseline" data-bs-toggle="collapse" data-bs-target="#collapse-example-{{ notebook.id }}" aria-expanded="true" aria-controls="collapse-example-{{ notebook.id }}">
+                  <i class="fas fa-book-open"></i> &ensp;Pages
+                </button>
+                <div class="collapse show" id="collapse-example-{{ notebook.id }}">
+                  <div class="ps-4 mt-2">
+                    <ul class="list-unstyled mb-0">
+                      {% for subpage in page.subpage_set.all %}
+                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}">{{ subpage.title }}</a></li>
+                      {% empty %}
+                      <li class="p-1">&ndash; No Pages</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+                </div>
+          </div>
+          <div class="col-9">
+            {{ page.body|safe }}
+          </div>
+        </div>
+        <!-- Pop Over -->
+        <!-- <div class="mb-4">
+          <button type="button" class="btn" data-bs-toggle="popover" data-bs-title="Title of the popover" data-bs-content="Content of the popover that spans across multiple lines.">
+            Popover
+          </button>
+        </div> -->
+        <!-- Pop Over -->
+
+      </div>
+      <div class="modal-footer">
+        <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+
+        {% if page.author.id != logined_profile.id %}
+          {% else %}
+          <a href="{% url 'create_subpage' notebook_pk=page.notebook.pk page_pk=page.id %}" class="btn btn-info">Add Sub Page</a>
+          <a href="{% url 'update_page' pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="" data-bs-toggle="modal" data-bs-target="#deletePageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endfor %}
+
+  <!-- Pages Modal -->
+{% for page in subpages %}
+<div class="modal fade" id="example-modal-subpage-{{ page.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-subpage-{{ page.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+          <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}"> <i class="fas fa-arrow-left"></i> </button>
+        <h1 class="modal-title fs-3" id="modal-title-2"><i class="fas fa-book-open"></i> &ensp;{{ page.title }}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {{ page.body|safe }}
+        <!-- Pop Over -->
+        <!-- <div class="mb-4">
+          <button type="button" class="btn" data-bs-toggle="popover" data-bs-title="Title of the popover" data-bs-content="Content of the popover that spans across multiple lines.">
+            Popover
+          </button>
+        </div> -->
+        <!-- Pop Over -->
+
+      </div>
+      <div class="modal-footer">
+        <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+
+        {% if page.author.id != logined_profile.id %}
+          {% else %}
+          <a href="{% url 'update_sub_page' pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="" data-bs-toggle="modal" data-bs-target="#deleteSubPageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endfor %}
+
+{% for page in subpages %}
+<div class="modal fade" id="deleteSubPageModal-{{ page.id }}" tabindex="-1" aria-labelledby="deleteSubPageModallabel-{{ page.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteSubPageModallLabel-{{ page.id }}">Delete Page</h5>
+                <button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the Page "{{ page.title }}"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}>Cancel</button>
+                <form action="{% url 'deletePage' page.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirmed" value="true">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% for page in subpages %}
+<div class="modal fade" id="deletePageModal-{{ page.id }}" tabindex="-1" aria-labelledby="deletePageModallabel-{{ page.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePageModallLabel-{{ page.id }}">Delete Page</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the Page "{{ page.title }}"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'deletePage' page.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirmed" value="true">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- tabs -->
+  <div class="tab-pane fade" id="nav-remainders" role="tabpanel" aria-labelledby="nav-remainders-tab" tabindex="0">
+    <div class="fab-container" style="bottom: 20px; right: 20px; position: fixed;">
+        <a href="{% url 'create_remainder' %}" class="fab-btn">
+           <!-- <svg src="{% static 'vendors/img/add.svg' %}" alt="" style="color: black;width: 20px;height: 20px;"></svg> -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" style="width: 21px;margin-right: 5%;margin-bottom: 2%;"><path fill="#fff" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M256 112v288M400 256H112" /></svg>New Remainder
+        </a>
+    </div>
+    <div class="m-3">
+      <h3>All Reminders</h3>
+        <div class="card">
+          <ul class="list-group list-group-flush">
+            {% for remainder in remainders %}
+            {% comment %} for the first make it red {% endcomment %}
+            {% if forloop.first %}
+            <li class="list-group-item p-3" style="color:black;background-color: #f9d5e5; border-left: 5px solid #f28b82; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <h5>
+                      {% if remainder.is_over %}
+                      <a href="{% url 'deleteRemainder' remainder.id %}"><span class="badge rounded-pill" style="background-color: #f28b82;"> 
+                        {% comment %} <i class="fas fa-trash" style="color:white;"></i> {% endcomment %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
+                          <path d="M296 64h-80a7.91 7.91 0 00-8 8v24h96V72a7.91 7.91 0 00-8-8z" fill="none"/><path d="M432 96h-96V72a40 40 0 00-40-40h-80a40 40 0 00-40 40v24H80a16 16 0 000 32h17l19 304.92c1.42 26.85 22 47.08 48 47.08h184c26.13 0 46.3-19.78 48-47l19-305h17a16 16 0 000-32zM192.57 416H192a16 16 0 01-16-15.43l-8-224a16 16 0 1132-1.14l8 224A16 16 0 01192.57 416zM272 400a16 16 0 01-32 0V176a16 16 0 0132 0zm32-304h-96V72a7.91 7.91 0 018-8h80a7.91 7.91 0 018 8zm32 304.57A16 16 0 01320 416h-.58A16 16 0 01304 399.43l8-224a16 16 0 1132 1.14z"/>
+                        </svg>
+                      </span></a>
+                      {% else %}
+                      <span class="badge rounded-pill" style="background-color: #3385ff;"> </span>
+                      {% endif %}
+                       {{ remainder.title }}</h5>
+                    <p>{{ remainder.body|safe }}</p>
+                    <span class="badge rounded-pill text-bg-dark">
+                      {% comment %} <i class="fas fa-bell" style="color: #f28b82;"></i>  {% endcomment %}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#ff0" style="width: 15px;">
+                        <path d="M440.08 341.31c-1.66-2-3.29-4-4.89-5.93-22-26.61-35.31-42.67-35.31-118 0-39-9.33-71-27.72-95-13.56-17.73-31.89-31.18-56.05-41.12a3 3 0 01-.82-.67C306.6 51.49 282.82 32 256 32s-50.59 19.49-59.28 48.56a3.13 3.13 0 01-.81.65c-56.38 23.21-83.78 67.74-83.78 136.14 0 75.36-13.29 91.42-35.31 118-1.6 1.93-3.23 3.89-4.89 5.93a35.16 35.16 0 00-4.65 37.62c6.17 13 19.32 21.07 34.33 21.07H410.5c14.94 0 28-8.06 34.19-21a35.17 35.17 0 00-4.61-37.66zM256 480a80.06 80.06 0 0070.44-42.13 4 4 0 00-3.54-5.87H189.12a4 4 0 00-3.55 5.87A80.06 80.06 0 00256 480z"/>
+                      </svg>
+                      {{ remainder.alert_time }}</span>
+                 
+              {% comment %} {% if remainder.is_completed == True or remainder.is_over == True %}
+                <a class="btn btn-link" href="{% url 'markReminderUnComplete' remainder.pk %}" role="button"><i class="fas fa-xmark"></i> Mark as Not Compelete</a>
+                {% else %}
+                <a class="btn btn-outline-primary" href="{% url 'markReminderComplete' remainder.pk %}" role="button"><i class="fas fa-check"></i> Mark as Compelete</a>
+              {% endif %}
+               {% endcomment %}
+              {% if remainder.is_favourite == True %}
+              <a class="btn btn-link " href="{% url 'markReminderUnFavourite' remainder.pk %}" role="button"> Mark as Not Favourite</a>
+              {% else %}
+              <a class="btn btn-outline-danger" href="{% url 'markReminderFavourite' remainder.pk %}" role="button"> Mark as Favourite</a>
+              {% endif %}
+              <a class="btn btn-link " href="{% url 'update_reminder' remainder.pk %}" role="button"> Edit Reminder</a>
+
+                      
+                </li>
+            {% else %}
+            <li class="list-group-item p-3">
+              <h5> <span class="badge rounded-pill" style="background-color: #3385ff;"> </span>  {{ remainder.title }}</h5>
+              <p>{{ remainder.body|safe|truncatechars:100 }}</p>
+              <span class="badge rounded-pill text-bg-dark"><i class="" style="color: #74C0FC;"><svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#ff0" style="width: 15px;">
+                        <path d="M440.08 341.31c-1.66-2-3.29-4-4.89-5.93-22-26.61-35.31-42.67-35.31-118 0-39-9.33-71-27.72-95-13.56-17.73-31.89-31.18-56.05-41.12a3 3 0 01-.82-.67C306.6 51.49 282.82 32 256 32s-50.59 19.49-59.28 48.56a3.13 3.13 0 01-.81.65c-56.38 23.21-83.78 67.74-83.78 136.14 0 75.36-13.29 91.42-35.31 118-1.6 1.93-3.23 3.89-4.89 5.93a35.16 35.16 0 00-4.65 37.62c6.17 13 19.32 21.07 34.33 21.07H410.5c14.94 0 28-8.06 34.19-21a35.17 35.17 0 00-4.61-37.66zM256 480a80.06 80.06 0 0070.44-42.13 4 4 0 00-3.54-5.87H189.12a4 4 0 00-3.55 5.87A80.06 80.06 0 00256 480z"/>
+                      </svg></i> {{ remainder.alert_time }}</span>
+              {% comment %} {% if remainder.is_completed == True or remainder.is_over == True %}
+                <a class="btn btn-link" href="{% url 'markReminderUnComplete' remainder.pk %}" role="button"><i class="fas fa-xmark"></i> Mark as Not Compelete</a>
+                {% else %}
+                <a class="btn btn-outline-primary" href="{% url 'markReminderComplete' remainder.pk %}" role="button"><i class="fas fa-check"></i> Mark as Compelete</a>
+              {% endif %} {% endcomment %}
+              
+              {% if remainder.is_favourite == True %}
+              <a class="btn btn-link " href="{% url 'markReminderUnFavourite' remainder.pk %}" role="button"> Mark as Not Favourite</a>
+              {% else %}
+              <a class="btn btn-outline-primary" href="{% url 'markReminderFavourite' remainder.pk %}" role="button"> Mark as Favourite</a>
+              {% endif %}
+              <a class="btn btn-link " href="{% url 'update_reminder' remainder.pk %}" role="button"> Edit Reminder</a>
+                
+            </li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+    </div>
+  </div>
+  <!-- <div class="tab-pane fade" id="nav-tasks" role="tabpanel" aria-labelledby="nav-tasks-tab" tabindex="0">...</div> -->
+
+  <!-- <div class="tab-pane fade" id="nav-disabled" role="tabpanel" aria-labelledby="nav-disabled-tab" tabindex="0">...</div> -->
+
+</div>
+
+{% endblock body %}

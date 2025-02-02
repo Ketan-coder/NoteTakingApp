@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Load JSON Data
+{% endblock title %}
+
+{% block body %}
+    <div class="content-wrapper m-2">
+        <h1>Load JSON Data</h1>
+        <form method="POST" enctype="multipart/form-data" class="form-inline m-3">
+            {% csrf_token %}
+            <div>
+                <label class="form-label" for="example-file-input-1">Json File</label>
+                <div class="input-group input-group-lg">
+                    <input type="file" class="form-control" name="json_file" accept=".json" required id="example-file-input-1" aria-label="Attach Json file">
+                    <button type="submit" class="btn btn-primary input-group-text" for="example-file-input-1">Upload JSON</button>
+                    {% comment %} <label class="input-group-text" for="example-file-input-1">Upload</label> {% endcomment %}
+                </div>
+                <div class="form-text">Please attach your JSON file.</div>
+            </div>
+            {% comment %} <div class="form-group">
+                <input type="file" class="file-upload" name="json_file" accept=".json" required>
+            </div> {% endcomment %}
+        </form>
+
+        {% if message %}
+        <p class="alert alert-success">{{ message }}</p>
+        {% endif %}
+        
+        {% if error %}
+        <p class="alert alert-danger">{{ error }}</p>
+        {% endif %}
+    </div>
+{% endblock body %}

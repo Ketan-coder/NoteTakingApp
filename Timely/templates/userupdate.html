@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Timely | Update User
+{% endblock title %}
+
+{% block head %}
+    <style>
+        #id_username, #id_email, #id_password1, #id_password2 {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #fff;
+        }
+    </style>
+{% endblock head %}
+
+{% block body %}
+<div class="m-3">
+    <div class="card">
+        <div class="card-body">
+            <h1 class="card-title">Update User</h1>
+            <form action="{% url 'update_user' %}" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.error }}
+                </div>
+                <div class="form-group">
+                    {{ p_form.as_p }}
+                </div>
+                <div class="form-group m-2 p-2">
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                </div>
+                <div class="form-group m-2 p-2">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                </div>
+                <div class="form-group m-2 p-2">
+                    {{ form.password1.label_tag }}
+                    {{ form.password1 }}
+                </div>
+                <div class="form-group m-2 p-2">
+                    {{ form.password2.label_tag }}
+                    {{ form.password2 }}
+                </div>
+                <div class="form-group align-items-end">
+                    <input type="submit" value="Update" class="btn btn-primary">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock body %}
