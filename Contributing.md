@@ -32,7 +32,7 @@ We appreciate your efforts in making this project better. Please follow the guid
    ```
 3. Navigate to the project directory:
    ```bash
-   cd Timely
+   cd NoteTakingApp/Timely
    ```
 4. Create a new branch:
    ```bash

@@ -20,7 +20,7 @@ Running at (for now): [Timely](http://timely.pythonanywhere.com/)
 
 2. Navigate to the project directory:
    ```bash
-   cd Timely
+   cd NoteTakingApp/Timely
     ```
 
 3. Install dependencies:
