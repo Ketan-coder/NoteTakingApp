@@ -28,7 +28,7 @@ We appreciate your efforts in making this project better. Please follow the guid
 1. Fork the repository by clicking the "Fork" button on GitHub.
 2. Clone your fork to your local machine:
    ```bash
-   git clone https://github.com/Ketan-coder/Timely.git
+   git clone https://github.com/Ketan-coder/NoteTakingApp.git
    ```
 3. Navigate to the project directory:
    ```bash
@@ -95,5 +95,5 @@ We appreciate your efforts in making this project better. Please follow the guid
 ---
 
 ## 📌 Reporting Issues
-If you find any bugs or have feature requests, please [open an issue](https://github.com/Ketan-coder/Timely/issues).
+If you find any bugs or have feature requests, please [open an issue](https://github.com/Ketan-coder/NoteTakingApp.git/issues).
 

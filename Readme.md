@@ -15,7 +15,7 @@ Running at (for now): [Timely](http://timely.pythonanywhere.com/)
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Ketan-coder/Timely.git
+   git clone https://github.com/Ketan-coder/NoteTakingApp.git
     ```
 
 2. Navigate to the project directory:
