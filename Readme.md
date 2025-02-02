@@ -1,5 +1,5 @@
-# Timely 📝
-
+# Timely: Notebook Web App 📝
+![Screenshot](Timely/screenshots/HomePage.png)
 Timely is a simple and efficient note-taking web app built with Django.  
 It allows users to create, edit, and organize notes effectively.
 
