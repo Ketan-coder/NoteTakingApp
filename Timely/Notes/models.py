@@ -14,7 +14,7 @@ from django.contrib import messages
 # Create your models here.
 class Notebook(models.Model):
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     priority = models.IntegerField(default=0)
     # priority = models.CharField(choices=PRIORITY_LIST,default="Important",max_length=50)
     is_favourite = models.BooleanField(default=False)

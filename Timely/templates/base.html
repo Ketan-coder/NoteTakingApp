@@ -97,6 +97,7 @@ img{
 	{% comment %} <script src="https://kit.fontawesome.com/2058ad717c.js" crossorigin="anonymous"></script> {% endcomment %}
     <link href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css" rel="stylesheet" integrity="sha256-SsJizWSIG9JT9Qxbiy8xnYJfjCAkhEQ0hihxRn7jt2M=" crossorigin="anonymous">
     <link href="{% static 'vendors/css/halfmoon.css' %}" rel="stylesheet" >
+    <script src="{% static 'vendors/js/htmx.min.js' %}" defer></script>
 	{% block head %}
 	
 	{% endblock head %}
@@ -187,8 +188,6 @@ img{
       popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl)
       );
     </script>
-    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
-<script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
 	{% block script %}{% endblock script %}
     <!-- Option 2: Separate Popper and Bootstrap JS
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>

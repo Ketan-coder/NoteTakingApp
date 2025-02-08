@@ -478,7 +478,7 @@
         {% if notebook.author.id != logined_profile.id %}
         {% else %}
           <a href="{% url 'create_page' pk=notebook.id %}" class="btn btn-info">Add Page</a>
-          <a href="{% url 'update_notebook' pk=notebook.id %}" class="btn btn-primary">Edit</a>
+          <a href="{% url 'update_notebook' notebook.id %}" class="btn btn-primary">Edit</a>
           <a href="{% url 'generate_pdf' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export PDF</a>
           <a href="{% url 'exportNotebookToJson' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export JSON</a>
           

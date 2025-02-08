@@ -568,6 +568,63 @@ def create_notebook(request):
         form = NotebookForm()
     return render(request, 'notebook_create.html', {'form': form})
 
+def notebook_form(request, notebook_id=None):
+    """Handles both creating and updating a notebook in a single template."""
+    notebook = None
+    if notebook_id:
+        notebook = get_object_or_404(Notebook, id=notebook_id)
+
+    if request.method == "POST":
+        if notebook:
+            # Update notebook
+            notebook.title = request.POST.get("title", notebook.title)
+            notebook.body = request.POST.get("body", notebook.body)
+            notebook.priority = request.POST.get("priority", notebook.priority)
+            notebook.is_password_protected = request.POST.get("is_password_protected") == "on"
+
+            if notebook.is_password_protected:
+                notebook.password = request.POST.get("password", notebook.password)
+            else:
+                notebook.password = ""  # Clear password if checkbox is unchecked
+
+            notebook.save()
+            return JsonResponse({"status": "saved", "title": notebook.title})
+
+        else:
+            # Create new notebook
+            title = request.POST.get("title", "Untitled")
+            body = request.POST.get("body", "")
+            priority = request.POST.get("priority", 1)
+            is_password_protected = request.POST.get("is_password_protected") == "on"
+            password = request.POST.get("password", "") if is_password_protected else ""
+
+            new_notebook = Notebook.objects.create(
+                title=title, body=body, priority=priority, 
+                is_password_protected=is_password_protected, password=password
+            )
+            return redirect("update_notebook", notebook_id=new_notebook.id)
+
+    return render(request, "notebook_form.html", {"notebook": notebook})
+
+def autosave_notebook(request,pk):
+    """Handles autosaving the notebook fields."""
+    if request.method == "POST":
+        # notebook_id = request.POST.get("notebook_id")
+        notebook = get_object_or_404(Notebook, id=pk)
+
+        # Update fields
+        notebook.title = request.POST.get("title", notebook.title)
+        notebook.priority = request.POST.get("priority", notebook.priority)
+        notebook.body = request.POST.get("body", notebook.body)
+        notebook.is_password_protected = request.POST.get("is_password_protected", "off") == "on"
+        notebook.password = request.POST.get("password", notebook.password)
+
+        # Save the updated notebook
+        notebook.save()
+        return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
+    
+    return JsonResponse({"message": "Error"}, status=400)
+
 def create_page(request, pk):
     notebook = Notebook.objects.get(id=pk)
     logined_profile = Profile.objects.get(user=request.user)

@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
 ]
 
 ROOT_URLCONF = 'Timely.urls'
@@ -142,8 +143,8 @@ INSTALLED_APPS = [
   "django.contrib.staticfiles",
     "Users.apps.UsersConfig",
     "Notes.apps.NotesConfig",
-    'ckeditor',
     'crispy_forms',
+    'django_htmx',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -173,23 +174,5 @@ TEMPLATES = [
 	},
 ]
 
-
-CKEDITOR_UPLOAD_PATH = "uploads/"
-CKEDITOR_CONFIGS = {
-    'default': {
-        # 'skin': 'moono-dark',
-        'toolbar': 'Custom',
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline', 'Strike'],
-            ['NumberedList', 'BulletedList', 'Indent', 'Outdent'],
-            ['Link', 'Unlink', 'Anchor'],
-            ['Undo', 'Redo'],
-            ['RemoveFormat','Source'],
-        ],
-        'height': 1000,
-        'width': 800,
-        # 'extraPlugins': ','.join(['autogrow', 'divarea']),
-    },
-}
 
 X_FRAME_OPTIONS = 'ALLOW-FROM https://timely.pythonanywhere.com/'

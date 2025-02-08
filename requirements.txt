@@ -13,6 +13,7 @@ cssselect2==0.7.0
 Django==5.0.4
 django-ckeditor==6.7.1
 django-crispy-forms==2.1
+django-htmx==1.22.0
 django-js-asset==2.2.0
 fonttools==4.51.0
 html5lib==1.1

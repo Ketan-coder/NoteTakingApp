@@ -4,13 +4,14 @@ from . import views
 
 urlpatterns = [
     path("", login_required(views.index), name="home"),
-    path('create-notebook/', login_required(views.create_notebook), name='create_notebook'),
+    path('create-notebook/', login_required(views.notebook_form), name='create_notebook'),
+    path('notebook/<int:notebook_id>/', login_required(views.notebook_form), name='update_notebook'),
+    path("autosave/<int:pk>/", login_required(views.autosave_notebook), name="autosave_notebook"),
     path('create-remainder/', login_required(views.create_remainder), name='create_remainder'),
     path('create-page/<int:pk>/', login_required(views.create_page), name='create_page'),
     path('create_subpage/<int:notebook_pk>/<int:page_pk>/', login_required(views.create_subpage), name='create_subpage'),
     path('update_sticky_notes/<int:pk>/', login_required(views.updateStickyNotes), name='update_sticky_notes'),
     path('update_reminder/<int:pk>/', login_required(views.update_reminder), name='update_reminder'),
-    path('update-notebook/<int:pk>/', login_required(views.update_notebook_modal), name='update_notebook'),
     path('update-page/<int:pk>/', login_required(views.update_page_modal), name='update_page'),
     path('update_sub_page/<int:pk>/', login_required(views.update_sub_page_modal), name='update_sub_page'),
     path('deleteNotebook/<int:pk>/', login_required(views.deleteNotebook), name='deleteNotebook'),
