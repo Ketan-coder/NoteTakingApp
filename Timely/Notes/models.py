@@ -73,7 +73,7 @@ class SharedNotebook(models.Model):
 class Page(models.Model):
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     is_favourite = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -477,7 +477,7 @@
 
         {% if notebook.author.id != logined_profile.id %}
         {% else %}
-          <a href="{% url 'create_page' pk=notebook.id %}" class="btn btn-info">Add Page</a>
+          <a href="{% url 'create_page' notebook_pk=notebook.id %}" class="btn btn-info">Add Page</a>
           <a href="{% url 'update_notebook' notebook.id %}" class="btn btn-primary">Edit</a>
           <a href="{% url 'generate_pdf' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export PDF</a>
           <a href="{% url 'exportNotebookToJson' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export JSON</a>
@@ -602,7 +602,7 @@
         {% if page.author.id != logined_profile.id %}
           {% else %}
           <a href="{% url 'create_subpage' notebook_pk=page.notebook.pk page_pk=page.id %}" class="btn btn-info">Add Sub Page</a>
-          <a href="{% url 'update_page' pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="{% url 'update_page' page_pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
           <a href="" data-bs-toggle="modal" data-bs-target="#deletePageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
         {% endif %}
 

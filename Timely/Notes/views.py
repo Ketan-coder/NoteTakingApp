@@ -606,6 +606,36 @@ def notebook_form(request, notebook_id=None):
 
     return render(request, "notebook_form.html", {"notebook": notebook})
 
+def page_form(request, page_pk=None, notebook_pk=None):
+    """Handles both creating and updating a notebook in a single template."""
+    page = None
+    notebook = None
+    if notebook_pk:
+        notebook = get_object_or_404(Notebook, id=notebook_pk)
+    if page_pk:
+        page = get_object_or_404(Page, id=page_pk)
+
+    if request.method == "POST":
+        if page:
+            # Update notebook
+            page.title = request.POST.get("title", page.title)
+            page.body = request.POST.get("body", page.body)
+
+            page.save()
+            return JsonResponse({"status": "saved", "title": page.title})
+
+        elif notebook:
+            # Create new notebook
+            title = request.POST.get("title", "Untitled")
+            body = request.POST.get("body", "")
+
+            new_page = Page.objects.create(
+                title=title, body=body, notebook=notebook
+            )
+            return redirect("update_page", page_pk=new_page.id)
+
+    return render(request, "page_form.html", {"page": page, "notebook": notebook})
+
 def autosave_notebook(request,pk):
     """Handles autosaving the notebook fields."""
     if request.method == "POST":
@@ -621,6 +651,22 @@ def autosave_notebook(request,pk):
 
         # Save the updated notebook
         notebook.save()
+        return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
+    
+    return JsonResponse({"message": "Error"}, status=400)
+
+def autosave_page(request,pk):
+    """Handles autosaving the page fields."""
+    if request.method == "POST":
+        # notebook_id = request.POST.get("notebook_id")
+        page = get_object_or_404(Page, id=pk)
+
+        # Update fields
+        page.title = request.POST.get("title", page.title)
+        page.body = request.POST.get("body", page.body)
+
+        # Save the updated notebook
+        page.save()
         return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
     
     return JsonResponse({"message": "Error"}, status=400)

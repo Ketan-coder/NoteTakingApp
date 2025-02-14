@@ -2,67 +2,47 @@
 {% load static %}
 
 {% block title %}
-    Timely | {% if notebook %} Update {% else %} Create {% endif %} Notebook
+    Timely | {% if page %} Update {% else %} Create {% endif %} Page
 {% endblock title %}
 
 {% block body %}
 
 <div class="container mt-4">
     <!-- Save Status Bar -->
-    {% if notebook %}<p id="save-status" class="mt-2 text-muted right"></p>{% endif %}
+    {% if page %}<p id="save-status" class="mt-2 text-muted right"></p>{% endif %}
     <form method="post" 
-          {% if notebook %} 
-              hx-post="{% url 'update_notebook' notebook.id %}" 
+          {% if page %} 
+              hx-post="{% url 'update_page' page_pk=page.id %}" 
           {% else %} 
-              hx-post="{% url 'create_notebook' %}" 
+            {% if notebook %}
+              hx-post="{% url 'create_page' notebook_pk=notebook.id %}" 
+            {% endif %}
           {% endif %}
-          hx-trigger="{% if notebook %} keyup changed delay:500ms {% endif %}"
+          hx-trigger="{% if page %} keyup changed delay:500ms {% endif %}"
           hx-target="#save-status" class="notebook-form">
         
         {% csrf_token %}
 
         <!-- Submit Button (Only for Create Mode) -->
-        {% if not notebook %}
-            <button type="submit" class="btn btn-primary mt-3 mb-3">Create Notebook</button>
+        {% if not page and notebook %}
+            <button type="submit" class="btn btn-primary mt-3 mb-3">Create page</button>
         {% endif %}
 
         <!-- Title Input -->
         <input type="text" id="id_title" name="title" class="form-control notebook-title"
-               placeholder="Untitled" value="{{ notebook.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               placeholder="Untitled" value="{{ page.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
+               {% if page %} hx-post="{% url 'autosave_page' page.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         
-        <!-- Priority Input -->
-        <input type="number" id="id_priority" name="priority" class="form-control notebook-priority"
-               placeholder="Priority" value="{{ notebook.priority|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
-
-        <!-- Password Protection -->
-        <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" name="is_password_protected" id="id_is_password_protected"
-                   {% if notebook.is_password_protected %}checked{% endif %}
-                   {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="change" hx-target="#save-status" {% endif %}>
-            <label class="form-check-label" for="id_is_password_protected">
-                Add Password Protection
-            </label>
-        </div>
-
-        <!-- Password Input (Hidden Initially if Not Protected) -->
-        <div class="form-group mt-2" id="group-password" {% if not notebook.is_password_protected %}style="display:none;"{% endif %}>
-            <input type="password" id="id_password" name="password"
-                   class="form-control notebook-password" placeholder="Enter password"
-                   value="{{ notebook.password|default_if_none:'' }}"
-                   {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
-        </div>
 
         <!-- Rich Text Editor -->
         <div id="editor-container" class="border rounded"></div>
         
         <!-- Hidden Input for Saving -->
         <textarea id="id_body" name="body" class="d-none" 
-                  {% if notebook %}hx-post="{% url 'autosave_notebook' notebook.id %}"
+                  {% if page %}hx-post="{% url 'autosave_page' page.id %}"
                   hx-trigger="change delay:500ms"
                   hx-target="#save-status"{% endif %}>
-            {{ notebook.body|default_if_none:'' }}
+            {{ page.body|default_if_none:'' }}
         </textarea>  
 
         
@@ -76,9 +56,9 @@
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <script>
-    document.getElementById('id_is_password_protected').addEventListener('change', function() {
-        document.getElementById('group-password').style.display = this.checked ? 'block' : 'none';
-    });
+    // document.getElementById('id_is_password_protected').addEventListener('change', function() {
+    //     document.getElementById('group-password').style.display = this.checked ? 'block' : 'none';
+    // });
 
     // Show "Saving..." and "Saved" status messages
     document.querySelectorAll("input, textarea").forEach(input => {
@@ -96,7 +76,7 @@
         window.quill = new Quill('#editor-container', {
             theme: 'snow',
             placeholder: 'Write something...',
-            ContentVisibilityAutoStateChangeEvent: true,
+            // ContentVisibilityAutoStateChangeEvent: true,
             modules: {
                 toolbar: [
                     [{ 'header': [1, 2, false] }],
