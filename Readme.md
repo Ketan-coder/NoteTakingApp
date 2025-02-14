@@ -30,6 +30,7 @@ Running at (for now): [Timely](http://timely.pythonanywhere.com/)
 
 4. Run migrations:
    ```bash
+   python manage.py makemigrations
    python manage.py migrate
     ```
 
