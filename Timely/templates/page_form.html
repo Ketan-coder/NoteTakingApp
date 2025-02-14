@@ -19,7 +19,7 @@
             {% endif %}
           {% endif %}
           hx-trigger="{% if page %} keyup changed delay:500ms {% endif %}"
-          hx-target="#save-status" class="notebook-form">
+          {% if page %} hx-target="#save-status" {% endif %} class="notebook-form">
         
         {% csrf_token %}
 

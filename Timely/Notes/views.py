@@ -126,18 +126,29 @@ def mark_password_as_not_entered(notebook_list):
         else:
             pass
 
-def mark_recently_accessed_as_false(page_list,notebooks):
-    recently_accessed_notebook = []
-    for notebook in notebooks:
-        if notebook.is_accessed_recently == True:
-            recently_accessed_notebook.append(notebook)
+# def mark_recently_accessed_as_false(page_list,notebooks):
+#     recently_accessed_notebook = []
+#     for notebook in notebooks:
+#         if notebook.is_accessed_recently == True:
+#             recently_accessed_notebook.append(notebook)
 
-    if len(recently_accessed_notebook) >= 3:
-        for page in recently_accessed_notebook.page_set.all():
-            if page.updated_at < timezone.now() + datetime.timedelta(hours=6, minutes=30):
-                related_notebook = Notebook.objects.get(id=page.notebook_id)
-                related_notebook.is_accessed_recently = False
-                related_notebook.save()
+#     if len(recently_accessed_notebook) >= 3:
+#         for page in recently_accessed_notebook.page_set.all():
+#             if page.updated_at < timezone.now() + datetime.timedelta(hours=6, minutes=30):
+#                 related_notebook = Notebook.objects.get(id=page.notebook_id)
+#                 related_notebook.is_accessed_recently = False
+#                 related_notebook.save()
+def mark_recently_accessed_as_false(page_list, notebooks):
+    recently_accessed_notebooks = [notebook for notebook in notebooks if notebook.is_accessed_recently]
+
+    if len(recently_accessed_notebooks) >= 3:
+        for notebook in recently_accessed_notebooks:  # Iterate over each notebook
+            for page in notebook.page_set.all():  # Access `page_set` for each notebook
+                if page.updated_at < timezone.now() + datetime.timedelta(hours=6, minutes=30):
+                    related_notebook = Notebook.objects.get(id=page.notebook_id)
+                    related_notebook.is_accessed_recently = False
+                    related_notebook.save()
+
 
 def check_activities():
     for activity in Activity.objects.all():
@@ -571,6 +582,7 @@ def create_notebook(request):
 def notebook_form(request, notebook_id=None):
     """Handles both creating and updating a notebook in a single template."""
     notebook = None
+    logged_in_profile = Profile.objects.get(user=request.user)
     if notebook_id:
         notebook = get_object_or_404(Notebook, id=notebook_id)
 
@@ -581,7 +593,7 @@ def notebook_form(request, notebook_id=None):
             notebook.body = request.POST.get("body", notebook.body)
             notebook.priority = request.POST.get("priority", notebook.priority)
             notebook.is_password_protected = request.POST.get("is_password_protected") == "on"
-
+            notebook.author = logged_in_profile
             if notebook.is_password_protected:
                 notebook.password = request.POST.get("password", notebook.password)
             else:
@@ -600,7 +612,7 @@ def notebook_form(request, notebook_id=None):
 
             new_notebook = Notebook.objects.create(
                 title=title, body=body, priority=priority, 
-                is_password_protected=is_password_protected, password=password
+                is_password_protected=is_password_protected, password=password, author=logged_in_profile
             )
             return redirect("update_notebook", notebook_id=new_notebook.id)
 
@@ -610,6 +622,7 @@ def page_form(request, page_pk=None, notebook_pk=None):
     """Handles both creating and updating a notebook in a single template."""
     page = None
     notebook = None
+    logged_in_profile = Profile.objects.get(user=request.user)
     if notebook_pk:
         notebook = get_object_or_404(Notebook, id=notebook_pk)
     if page_pk:
@@ -630,7 +643,7 @@ def page_form(request, page_pk=None, notebook_pk=None):
             body = request.POST.get("body", "")
 
             new_page = Page.objects.create(
-                title=title, body=body, notebook=notebook
+                title=title, body=body, notebook=notebook, author=logged_in_profile
             )
             return redirect("update_page", page_pk=new_page.id)
 

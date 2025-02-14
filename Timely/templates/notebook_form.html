@@ -5,6 +5,14 @@
     Timely | {% if notebook %} Update {% else %} Create {% endif %} Notebook
 {% endblock title %}
 
+{% block head %}
+    <script>
+        document.addEventListener("htmx:configRequest", (event) => {
+            event.detail.headers["X-CSRFToken"] = "{{ csrf_token }}";
+        });
+    </script>
+{% endblock head %}
+
 {% block body %}
 
 <div class="container mt-4">
@@ -16,14 +24,16 @@
           {% else %} 
               hx-post="{% url 'create_notebook' %}" 
           {% endif %}
-          hx-trigger="{% if notebook %} keyup changed delay:500ms {% endif %}"
-          hx-target="#save-status" class="notebook-form">
+          hx-trigger="{% if notebook %} keyup changed delay:500ms {% else %}submit{% endif %}"
+          {% if notebook %} hx-target="#save-status" {% endif %} class="notebook-form">
         
-        {% csrf_token %}
+        {% comment %} {% csrf_token %} {% endcomment %}
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
 
         <!-- Submit Button (Only for Create Mode) -->
         {% if not notebook %}
-            <button type="submit" class="btn btn-primary mt-3 mb-3">Create Notebook</button>
+            <input type="submit" class="btn btn-primary mt-3 mb-3" value="Create Notebook">
         {% endif %}
 
         <!-- Title Input -->
