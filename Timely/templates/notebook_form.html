@@ -25,7 +25,7 @@
               hx-post="{% url 'create_notebook' %}" 
           {% endif %}
           hx-trigger="{% if notebook %} keyup changed delay:500ms {% else %}submit{% endif %}"
-          {% if notebook %} hx-target="#save-status" {% endif %} class="notebook-form">
+          {% if notebook %} hx-target="#save-status" {% endif %} class="notebook-form" hx-push-url="true">
         
         {% comment %} {% csrf_token %} {% endcomment %}
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -37,12 +37,12 @@
         {% endif %}
 
         <!-- Title Input -->
-        <input type="text" id="id_title" name="title" class="form-control notebook-title"
+        <input type="text" id="id_title" name="title" class="form-control notebook-title" required
                placeholder="Untitled" value="{{ notebook.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
                {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         
         <!-- Priority Input -->
-        <input type="number" id="id_priority" name="priority" class="form-control notebook-priority"
+        <input type="number" id="id_priority" name="priority" class="form-control notebook-priority" required
                placeholder="Priority" value="{{ notebook.priority|default_if_none:'' }}" style="background: none; border: none; color: white;"
                {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
 
@@ -68,7 +68,7 @@
         <div id="editor-container" class="border rounded"></div>
         
         <!-- Hidden Input for Saving -->
-        <textarea id="id_body" name="body" class="d-none" 
+        <textarea id="id_body" name="body" class="d-none" required
                   {% if notebook %}hx-post="{% url 'autosave_notebook' notebook.id %}"
                   hx-trigger="change delay:500ms"
                   hx-target="#save-status"{% endif %}>
@@ -109,11 +109,34 @@
             ContentVisibilityAutoStateChangeEvent: true,
             modules: {
                 toolbar: [
-                    [{ 'header': [1, 2, false] }],
+                    // Headings & Font
+                    [{ 'header': [1, 2, 3, false] }],
+                    [{ 'font': [] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+
+                    // Text Formatting
                     ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['blockquote', 'code-block'],
+
+                    // Superscript / Subscript
+                    [{ 'script': 'sub' }, { 'script': 'super' }],
+
+                    // Lists & Indentation
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'indent': '-1' }, { 'indent': '+1' }],
+
+                    // Text Alignment
+                    [{ 'align': [] }],
+
+                    // Colors
+                    [{ 'color': [] }, { 'background': [] }],
+
+                    // Links & Media
                     ['link'],
+
+                    // Block Quote & Code
+                    ['blockquote', 'code-block'],
+
+                    // Clear Formatting
                     ['clean']
                 ]
             }
@@ -144,15 +167,17 @@
     });
 }
 document.body.addEventListener("htmx:afterRequest", function(event) {
-    if (event.detail.xhr.responseText.includes('"message": "Saved!"')) {
-        let saveStatus = document.getElementById("save-status");
-        if (saveStatus) {
-            saveStatus.textContent = "Saved!";
-            saveStatus.classList.remove("hidden");
-            setTimeout(() => saveStatus.classList.add("hidden"), 2000);
+    let response = event.detail.xhr.responseText;
+    try {
+        let data = JSON.parse(response);
+        if (data.redirect) {
+            window.location.href = data.redirect; // Manually update the URL
         }
+    } catch (e) {
+        console.error("Invalid JSON response", e);
     }
 });
+
 </script>
 {% endblock script %}
 

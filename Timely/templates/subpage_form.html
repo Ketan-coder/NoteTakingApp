@@ -2,34 +2,34 @@
 {% load static %}
 
 {% block title %}
-    Timely | {% if page %} Update {% else %} Create {% endif %} Page
+    Timely | {% if subpage %} Update {% else %} Create {% endif %} SubPage
 {% endblock title %}
 
 {% block body %}
 
 <div class="container mt-4">
     <!-- Save Status Bar -->
-    {% if page %}<p id="save-status" class="mt-2 text-muted right"></p>{% endif %}
+    {% if subpage %}<p id="save-status" class="mt-2 text-muted right"></p>{% endif %}
         <form method="post" 
-      {% if page %} 
-          hx-post="{% url 'update_page' page_pk=page.id %}" 
-      {% elif notebook %} 
-          hx-post="{% url 'create_page' notebook_pk=notebook.id %}" 
-      {% endif %}
-      {% if page %} hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}
+      {% if subpage %} 
+              hx-post="{% url 'update_sub_page' subpage_pk=subpage.id %}" 
+    {% else %} 
+              hx-post="{% url 'create_subpage' notebook_pk=notebook.id page_pk=page.id %}" 
+    {% endif %}
+      {% if subpage %} hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}
       class="notebook-form" hx-push-url="true">
 
         {% csrf_token %}
 
         <!-- Submit Button (Only for Create Mode) -->
-        {% if not page and notebook %}
-            <button type="submit" class="btn btn-primary mt-3 mb-3">Create page</button>
+        {% if not subpage %}
+            <button type="submit" class="btn btn-primary mt-3 mb-3">Create Sub Page</button>
         {% endif %}
 
         <!-- Title Input -->
         <input type="text" id="id_title" name="title" class="form-control notebook-title" required
-               placeholder="Untitled" value="{{ page.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if page %} hx-post="{% url 'autosave_page' page.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               placeholder="Untitled" value="{{ subpage.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
+               {% if subpage %} hx-post="{% url 'autosave_subpage' subpage.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         
 
         <!-- Rich Text Editor -->
@@ -37,10 +37,10 @@
         
         <!-- Hidden Input for Saving -->
         <textarea id="id_body" name="body" class="d-none" required
-                  {% if page %}hx-post="{% url 'autosave_page' page.id %}"
+                  {% if subpage %}hx-post="{% url 'autosave_subpage' subpage.id %}"
                   hx-trigger="change delay:500ms"
                   hx-target="#save-status"{% endif %}>
-            {{ page.body|default_if_none:'' }}
+            {{ subpage.body|default_if_none:'' }}
         </textarea>  
 
         
@@ -59,6 +59,15 @@
     // });
 
     // Show "Saving..." and "Saved" status messages
+    // document.querySelectorAll("input, textarea").forEach(input => {
+    //     input.addEventListener("input", function() {
+    //         const saveStatus = document.getElementById("save-status");
+    //         saveStatus.textContent = "Saving...";
+    //         setTimeout(() => {
+    //             saveStatus.textContent = "Saved";
+    //         }, 1000); // Delay to show "Saved" after typing stops
+    //     });
+    // });
     document.querySelectorAll("input, textarea").forEach(input => {
         input.addEventListener("input", function() {
             let saveStatus = document.getElementById("save-status");
@@ -138,6 +147,16 @@
         textarea.dispatchEvent(new Event("change")); // Trigger HTMX autosave
     });
 }
+// document.body.addEventListener("htmx:afterRequest", function(event) {
+//     if (event.detail.xhr.responseText.includes('"message": "Saved!"')) {
+//         let saveStatus = document.getElementById("save-status");
+//         if (saveStatus) {
+//             saveStatus.textContent = "Saved!";
+//             saveStatus.classList.remove("hidden");
+//             setTimeout(() => saveStatus.classList.add("hidden"), 2000);
+//         }
+//     }
+// });
 document.body.addEventListener("htmx:afterRequest", function(event) {
     let response = event.detail.xhr.responseText;
     try {

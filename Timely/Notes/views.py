@@ -3,6 +3,7 @@ import json
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from Notes.utils import render_to_pdf
 from .models import Activity, Notebook, Page, StickyNotes, Remainder, SharedNotebook, SubPage
 from .forms import NotebookForm, PageForm, StickyNotesForm,RemainderForm,SubPageForm
@@ -577,7 +578,7 @@ def create_notebook(request):
                 pass
     else:
         form = NotebookForm()
-    return render(request, 'notebook_create.html', {'form': form})
+    return render(request, 'create_notebook.html', {'form': form})
 
 def notebook_form(request, notebook_id=None):
     """Handles both creating and updating a notebook in a single template."""
@@ -614,7 +615,7 @@ def notebook_form(request, notebook_id=None):
                 title=title, body=body, priority=priority, 
                 is_password_protected=is_password_protected, password=password, author=logged_in_profile
             )
-            return redirect("update_notebook", notebook_id=new_notebook.id)
+            return JsonResponse({"redirect": f"/notebook/{new_notebook.pk}/"})
 
     return render(request, "notebook_form.html", {"notebook": notebook})
 
@@ -635,7 +636,7 @@ def page_form(request, page_pk=None, notebook_pk=None):
             page.body = request.POST.get("body", page.body)
 
             page.save()
-            return JsonResponse({"status": "saved", "title": page.title})
+            return JsonResponse({"status": "saved", "title": page.title, "body": page.body})
 
         elif notebook:
             # Create new notebook
@@ -645,7 +646,7 @@ def page_form(request, page_pk=None, notebook_pk=None):
             new_page = Page.objects.create(
                 title=title, body=body, notebook=notebook, author=logged_in_profile
             )
-            return redirect("update_page", page_pk=new_page.id)
+            return JsonResponse({"redirect": f"/page/{new_page.pk}/"})
 
     return render(request, "page_form.html", {"page": page, "notebook": notebook})
 
@@ -721,6 +722,78 @@ def create_subpage(request, notebook_pk:int,page_pk:int):
     else:
         form = SubPageForm()
     return render(request, 'sub_page_create.html', {'form': form})
+
+def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
+    """Handles both creating and updating a subpage, allowing updates with just subpage_pk."""
+    
+    subpage = None
+    notebook = None
+    page = None
+    logined_profile = get_object_or_404(Profile, user=request.user)
+
+    # If subpage_pk is provided, fetch its related notebook and page automatically
+    if subpage_pk:
+        subpage = get_object_or_404(SubPage, id=subpage_pk)
+        notebook = subpage.notebook
+        page = subpage.page
+    else:
+        if not notebook_pk or not page_pk:
+            return redirect("home")  # Prevents errors when creating a new subpage
+        
+        notebook = get_object_or_404(Notebook, id=notebook_pk)
+        page = get_object_or_404(Page, id=page_pk)
+
+    if request.method == 'POST':
+        if subpage:
+            # Update existing subpage
+            subpage.title = request.POST.get("title", subpage.title)
+            subpage.body = request.POST.get("body", subpage.body)
+            subpage.save()
+
+            if request.headers.get("HX-Request"):
+                return JsonResponse({"status": "saved", "title": subpage.title})
+            return redirect("update_subpage", subpage_pk=subpage.id)  
+
+        else:
+            # Create new subpage
+            title = request.POST.get("title", "Untitled")
+            body = request.POST.get("body", "")
+
+            new_subpage = SubPage.objects.create(
+                title=title, body=body, notebook=notebook, page=page, author=logined_profile
+            )
+
+            # Save last created subpage in session for redirection
+            request.session["last_created_subpage_id"] = new_subpage.id
+            request.session.modified = True  
+
+            Activity.objects.create(
+                author=logined_profile, 
+                title="Created New Subpage",
+                body=f"Created a new subpage under {new_subpage.title}"
+            )
+
+            if request.headers.get("HX-Request"):
+                return JsonResponse({"redirect": reverse("update_sub_page", kwargs={"subpage_pk": new_subpage.id})})
+            return redirect("update_sub_page", subpage_pk=new_subpage.id)  
+
+    return render(request, "subpage_form.html", {"subpage": subpage, "page": page, "notebook": notebook})
+
+def autosave_subpage(request,pk):
+    """Handles autosaving the Subpage fields."""
+    if request.method == "POST":
+        # notebook_id = request.POST.get("notebook_id")
+        subPage = get_object_or_404(SubPage, id=pk)
+
+        # Update fields
+        subPage.title = request.POST.get("title", subPage.title)
+        subPage.body = request.POST.get("body", subPage.body)
+
+        # Save the updated notebook
+        subPage.save()
+        return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
+    
+    return JsonResponse({"message": "Error"}, status=400)
 
 @login_required
 def search(request):

@@ -639,7 +639,7 @@
 
         {% if page.author.id != logined_profile.id %}
           {% else %}
-          <a href="{% url 'update_sub_page' pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="{% url 'update_sub_page' subpage_pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
           <a href="" data-bs-toggle="modal" data-bs-target="#deleteSubPageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
         {% endif %}
 
