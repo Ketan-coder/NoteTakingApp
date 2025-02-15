@@ -764,8 +764,6 @@ def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
             )
 
             # Save last created subpage in session for redirection
-            request.session["last_created_subpage_id"] = new_subpage.id
-            request.session.modified = True  
 
             Activity.objects.create(
                 author=logined_profile, 
