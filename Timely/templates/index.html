@@ -77,7 +77,7 @@
                 <!-- Spinner Card -->
                 <div class="card">
                     <ul class="list-group list-group-flush">
-                        {% for notebook in notebooks|slice:"3" %}
+                        {% for notebook in notebooks_list_priority|slice:"3" %}
                       <li class="list-group-item p-3">
                         <b style="font-weight: 500;">
                         {% comment %} {% if notebook.is_password_protected %}
@@ -170,16 +170,19 @@
                       {% for notebook in notebooks_list_priority %}
                       <li class="list-group-item p-3">
                           <b style="font-weight: 500;">
-                        <a 
-                          {% if notebook.is_password_protected %}
-                            style="text-decoration: none;" 
-                              href="{% url 'verify_password' notebook.id %}"
+                        <a value="{{notebook.id}}"
+                              {% if notebook.is_password_protected %}
+                                style="text-decoration: none;" 
+                                href="{% url 'verify_password' notebook.id %}"
                               {% else %}
-                              href="#{{notebook.title}}"
-                              data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.id }}"
-                              style="text-decoration: none;color:hsl(216,100%,60%);cursor:pointer;"
-                          {% endif %}
-                             >
+                                href="#{{notebook.title}}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#example-modal-{{ notebook.id }}"
+                                data-notebook-id="{{ notebook.id }}" 
+                                class="notebook-title"
+                                style="text-decoration: none; color:hsl(216,100%,60%); cursor:pointer;"
+                              {% endif %}>
+
                           {% if notebook.priority < 2 %}
                           <span class="badge rounded-pill" style="background-color: #ff4a4a;margin-right: 1%; font-weight: bold;">
                             {% comment %} <i class="fas fa-arrow-up"></i> {% endcomment %}
@@ -440,9 +443,10 @@
                   <button type="button" class="btn btn-link d-flex align-items-baseline" data-bs-toggle="collapse" data-bs-target="#collapse-example-{{ notebook.id }}" aria-expanded="true" aria-controls="collapse-example-{{ notebook.id }}">
                   <i class="fas fa-book-open"></i> &ensp;Pages
                 </button>
+
                 <div class="collapse show" id="collapse-example-{{ notebook.id }}">
                   <div class="ps-4 mt-2">
-                    <ul class="list-unstyled mb-0">
+                    <ul class="list-unstyled mb-0" id="notebook-pages-{{ notebook.id }}">
                       {% for page in notebook.page_set.all %}
                       <li class="p-1">&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-page-{{ page.id }}">{{ page.title }}</a></li>
                         <ul class="list-unstyled mb-1">
@@ -459,7 +463,26 @@
                 </div>
           </div>
           <div class="col-9">
-            {{ notebook.body|safe }}
+            <div id="notebook-body-{{ notebook.id }}" data-notebook-id="{{ notebook.id }}">
+                {% comment %} <button id="load-content-{{ notebook.id }}"
+                      hx-get="{% url 'fetch_notebook_pages' notebook.id %}"
+                      hx-trigger="click"
+                      hx-target="#notebook-body-{{ notebook.id }}"
+                      hx-swap="outerHTML"
+                      style="display: none;">
+              </button> {% endcomment %}
+              <button id="load-content-{{ notebook.id }}"
+                          hx-get="{% url 'fetch_notebook_pages' notebook.id %}"
+                          hx-trigger="click"
+                          hx-target="#notebook-body-{{ notebook.id }}"
+                          hx-ext="json-enc"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="updateNotebookBody(event)"
+                          data-notebook-id="{{ notebook.id }}"
+                          style="display: none;">
+                  </button>
+            </div>
+            {% comment %} {{ notebook.body|safe }} {% endcomment %}
           </div>
     </div>
         <!-- Pop Over -->
@@ -783,3 +806,61 @@
 </div>
 
 {% endblock body %}
+{% block script %}
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".notebook-title").forEach(function (title) {
+        title.addEventListener("click", function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            let notebookId = this.getAttribute("data-notebook-id");
+            let loadButton = document.getElementById("load-content-" + notebookId);
+            if (loadButton) {
+                loadButton.click(); // Auto-click the hidden HTMX button
+            }
+        });
+    });
+});
+</script>
+<script>
+document.body.addEventListener("htmx:afterRequest", function(event) {
+    console.log("HTMX request completed! Event:", event);
+
+    if (!event.detail || !event.detail.xhr) {
+        console.error("Invalid event details. No response.");
+        return;
+    }
+
+    let responseText = event.detail.xhr.responseText;
+    console.log("Raw JSON Response:", responseText);
+
+    try {
+        let data = JSON.parse(responseText);
+        console.log("Parsed Data:", data);
+
+        // Get the correct notebook ID from the event target
+        let notebookElement = event.detail.target;
+        let notebookId = notebookElement.getAttribute("data-notebook-id");
+
+        if (!notebookId) {
+            console.error("Notebook ID not found!");
+            return;
+        }
+
+        let target = document.getElementById("notebook-body-" + notebookId);
+
+        if (target) {
+            console.log("Updating target:", target);
+            target.innerHTML = data.body;
+        } else {
+            console.error("Target element not found: #notebook-body-" + notebookId);
+        }
+    } catch (error) {
+        console.error("Error parsing JSON response:", error);
+    }
+});
+</script>
+
+
+
+
+{% endblock script %}

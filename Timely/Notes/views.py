@@ -83,9 +83,14 @@ def index(request):
         start_time = datetime.datetime.now()
 
         logined_profile = Profile.objects.get(user=request.user)
-        notebooks_list = Notebook.objects.filter(author=logined_profile).order_by('-is_accessed_recently')
-        notebooks_list_priority = Notebook.objects.filter(author=logined_profile).order_by('priority')
-        pages = Page.objects.filter(notebook__in=notebooks_list)
+        notebooks_list = Notebook.objects.filter(author=logined_profile).only(
+                'id', 'title', 'is_accessed_recently', 'priority', 'is_favourite',
+                'is_shared', 'is_password_protected', 'is_password_entered', 'password'
+                , 'author', 'created_at', 'updated_at'
+            ).defer('body').order_by('-is_accessed_recently')
+
+        notebooks_list_priority = notebooks_list.order_by('priority')
+        pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-updated_at')
         subpages = SubPage.objects.filter(page__in=pages)
         activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
         sticky_notes = StickyNotes.objects.filter(author=logined_profile)
@@ -110,14 +115,42 @@ def index(request):
         end_time = datetime.datetime.now()
 
         print(f"Time taken: {end_time - start_time}")
-        context = {'notebooks': notebooks,'notebooks_list_priority': notebooks_list_priority, 'pages': pages, 'logined_profile': logined_profile,
-                   'activities': activities, 'sticky_notes': sticky_notes, 'subpages': subpages,
+        context = {'notebooks': notebooks,'notebooks_list_priority': notebooks_list_priority, 'logined_profile': logined_profile,
+                   'activities': activities, 'sticky_notes': sticky_notes, "pages": pages,"subpages": subpages,
                    'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks, 
                    'favouritesPages': favouritesPages, 'favouritesRemainders': favouritesRemainders,'sharedNotebooks': sharedNotebooks}
     else:
         context = {}
         redirect('login')
     return render(request, "index.html", context)
+
+# def fetch_notebook_contents(request, notebook_id, page_id=None, subpage_id=None):
+#     """Fetch the body content of a notebook, page, or subpage dynamically for HTMX."""
+    
+#     if subpage_id:
+#         content = get_object_or_404(SubPage, id=subpage_id).body
+#     elif page_id:
+#         content = get_object_or_404(Page, id=page_id).body
+#     else:
+#         notebook = get_object_or_404(Notebook, id=notebook_id, author=request.user.profile)
+#         content = notebook.body  # Ensure we fetch the correct body
+
+#     return render(request, "components/notebook_body.html", {"body": content})
+
+def fetch_notebook_contents(request, notebook_id, page_id=None, subpage_id=None):
+    """Fetch the body content of a notebook, page, or subpage dynamically for HTMX as JSON."""
+    
+    content = None  # Default empty content
+
+    if subpage_id:
+        content = get_object_or_404(SubPage, id=subpage_id).body
+    elif page_id:
+        content = get_object_or_404(Page, id=page_id).body
+    else:
+        notebook = get_object_or_404(Notebook, id=notebook_id, author=request.user.profile)
+        content = notebook.body  # Ensure we fetch the correct body
+
+    return JsonResponse({"body": content})
     
 def mark_password_as_not_entered(notebook_list):
     for notebook in notebook_list:
@@ -615,6 +648,10 @@ def notebook_form(request, notebook_id=None):
                 title=title, body=body, priority=priority, 
                 is_password_protected=is_password_protected, password=password, author=logged_in_profile
             )
+            # Do not remove this
+            new_page = Page.objects.create(title="Page", body="Dummy Body", notebook=new_notebook, author=logged_in_profile)
+            # Do not remove this ^
+            print(new_page)
             return JsonResponse({"redirect": f"/notebook/{new_notebook.pk}/"})
 
     return render(request, "notebook_form.html", {"notebook": notebook})

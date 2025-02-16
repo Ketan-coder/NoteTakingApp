@@ -37,17 +37,24 @@
         {% endif %}
 
         <!-- Title Input -->
+        <div class="input-group has-validation">
+            
         <input type="text" id="id_title" name="title" class="form-control notebook-title" required
                placeholder="Untitled" value="{{ notebook.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
                {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
-        
+               <div class="invalid-feedback">
+                    Please provide a valid title.
+                </div>
+        </div>
         <!-- Priority Input -->
+        <div class="input-group has-validation">
+            <span class="input-group-text" id="1-username-prepend">^</span>
         <input type="number" id="id_priority" name="priority" class="form-control notebook-priority" required
                placeholder="Priority" value="{{ notebook.priority|default_if_none:'' }}" style="background: none; border: none; color: white;"
                {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
-
+        </div>
         <!-- Password Protection -->
-        <div class="form-check mt-3">
+        <div class="form-switch mt-3">
             <input class="form-check-input" type="checkbox" name="is_password_protected" id="id_is_password_protected"
                    {% if notebook.is_password_protected %}checked{% endif %}
                    {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="change" hx-target="#save-status" {% endif %}>
@@ -111,7 +118,7 @@
                 toolbar: [
                     // Headings & Font
                     [{ 'header': [1, 2, 3, false] }],
-                    [{ 'font': [] }],
+                    [{ 'font': ['roboto', 'lora', 'poppins', 'serif', 'monospace'] }],
                     [{ 'size': ['small', false, 'large', 'huge'] }],
 
                     // Text Formatting
