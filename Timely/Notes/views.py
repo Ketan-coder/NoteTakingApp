@@ -339,6 +339,7 @@ def loadJsonToModels(request):
                 local_now = timezone.localtime(timezone.now())
                 notebook_map = {}
                 page_map = {}
+                is_edited=False
 
                 with transaction.atomic():  # Ensures atomicity
                     # Create Notebooks
@@ -350,22 +351,27 @@ def loadJsonToModels(request):
                         real_author = Profile.objects.filter(id=author_id).first()
                         author = user_profile  # Always assign request.user
 
-                        # Create new notebook, no update, only creation
-                        notebook = Notebook.objects.create(
-                            title=fields['title'],
-                            body=fields['body'],
-                            priority=fields['priority'],
-                            is_favourite=fields['is_favourite'],
-                            is_shared=fields['is_shared'],
-                            author=author
+                        # Check if notebook already exists for the logged-in user
+                        notebook, created = Notebook.objects.update_or_create(
+                            title=fields['title'],  # Use title as unique identifier
+                            author=author,  # Ensure it's the logged-in user's notebook
+                            defaults={
+                                'body': fields['body'],
+                                'priority': fields['priority'],
+                                'is_favourite': fields['is_favourite'],
+                                'is_shared': fields['is_shared'],
+                            }
                         )
-
+  
                         # Manually set timestamps
-                        notebook.created_at = local_now
+                        notebook.created_at = local_now if created else notebook.created_at
                         notebook.updated_at = local_now
                         notebook.save()
 
                         notebook_map[obj['pk']] = notebook  # Store reference
+
+                        if not created:
+                            is_edited = True
 
                     # Create Pages
                     for obj in json_data.get('pages', []):
@@ -375,16 +381,22 @@ def loadJsonToModels(request):
 
                         if notebook:
                             # Create new page, no update, only creation
-                            page = Page.objects.create(
+                            page, created = Page.objects.update_or_create(
                                 title=fields['title'],
                                 notebook=notebook,
-                                body=fields['body'],
-                                is_favourite=fields['is_favourite'],
-                                created_at=local_now,
-                                updated_at=local_now,
-                                author=notebook.author
+                                author=notebook.author,
+                                defaults={
+                                    'body':fields['body'],
+                                    'is_favourite':False,
+                                    'created_at':local_now,
+                                    'updated_at':local_now,
+                                }
                             )
-                            page_map[obj['pk']] = page  
+                            page_map[obj['pk']] = page
+
+                            if not created:
+                                is_edited = True
+
 
                     # Create SubPages
                     for obj in json_data.get('subpages', []):
@@ -393,29 +405,39 @@ def loadJsonToModels(request):
                         page = page_map.get(page_id)
 
                         if page:
-                            SubPage.objects.create(
+                            subpage, created = SubPage.objects.update_or_create(
                                 title=fields['title'],
-                                body=fields['body'],
                                 page=page,
+                                author=page.author , 
                                 notebook=page.notebook,
-                                created_at=local_now,
-                                updated_at=local_now,
-                                author=page.author  
+                                defaults={
+                                    'body':fields['body'],
+                                    'created_at':local_now,
+                                    'updated_at':local_now,
+                                }
                             )
+
+                            if not created:
+                                is_edited = True
                     # Format the time as "12 December, 2024 - 01:50"
                     formatted_time = local_now.strftime('%d %B, %Y - %H:%M')
 
                     # Log activity in the **real author's profile** if they exist
-                    if real_author and real_author != user_profile:
-                        Activity.objects.create(
-                            author=real_author,
-                            title='Notebook Added',
-                            body=f"'{notebook.title}' Notebook was added by {user_profile.user.username} on {formatted_time}."
-                        )
+                    if not is_edited:
+                        if real_author and real_author != user_profile:
+                            Activity.objects.create(
+                                author=real_author,
+                                title='Notebook Added',
+                                body=f"'{notebook.title}' Notebook was added by {user_profile.user.username} on {formatted_time}."
+                            )
 
-                    # Log activity
-                    Activity.objects.create(author=user_profile, title='Created Notebook from JSON', body='Notebook and its pages were created')
-                    messages.success(request, 'Notebook created successfully from uploaded document!')
+                        # Log activity
+                        Activity.objects.create(author=user_profile, title='Created Notebook from JSON', body='Notebook and its pages were created')
+                        messages.success(request, 'Notebook created successfully from uploaded document!')
+                    else:
+                        # Log activity
+                        Activity.objects.create(author=user_profile, title=f'{notebook.title} Notebook Updated from JSON', body=f'{notebook.title} Notebook and its pages were Updated')
+                        messages.success(request, f'{notebook.title} Notebook updated successfully from uploaded document!')
                     return redirect('home')
 
             except Exception as e:
