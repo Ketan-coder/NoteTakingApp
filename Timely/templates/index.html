@@ -85,16 +85,18 @@
                           {% else %}
                           <a href="#{{notebook.title}}" style="text-decoration: none;" data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.id }}">
                         {% endif %} {% endcomment %}
-                          <a 
-                          {% if notebook.is_password_protected %}
-                            style="text-decoration: none;" 
+                        <a value="{{notebook.id}}"
+                            {% if notebook.is_password_protected %}
+                              style="text-decoration: none;" 
                               href="{% url 'verify_password' notebook.id %}"
-                              {% else %}
+                            {% else %}
                               href="#{{notebook.title}}"
-                              data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.id }}"
-                              style="text-decoration: none;color:hsl(216,100%,60%);cursor:pointer;"
-                          {% endif %}
-                             >
+                              data-bs-toggle="modal" 
+                              data-bs-target="#example-modal-{{ notebook.id }}"
+                              data-notebook-id="{{ notebook.id }}" 
+                              class="notebook-title"
+                              style="text-decoration: none; color:hsl(216,100%,60%); cursor:pointer;"
+                            {% endif %}>
                             
                              
                                 
@@ -482,7 +484,7 @@
                           style="display: none;">
                   </button>
             </div>
-            {% comment %} {{ notebook.body|safe }} {% endcomment %}
+            {% comment %}{{ notebook.body|safe }} {% endcomment %}
           </div>
     </div>
         <!-- Pop Over -->

@@ -19,6 +19,7 @@ from django.conf import settings
 from .models import Notebook, Page, SubPage
 import json
 import os
+from django.db import transaction
 
 # Uncomment when done with lock
 # from django.views.decorators.cache import cache_page
@@ -84,9 +85,9 @@ def index(request):
 
         logined_profile = Profile.objects.get(user=request.user)
         notebooks_list = Notebook.objects.filter(author=logined_profile).only(
-                'id', 'title', 'is_accessed_recently', 'priority', 'is_favourite',
-                'is_shared', 'is_password_protected', 'is_password_entered', 'password'
-                , 'author', 'created_at', 'updated_at'
+            'id', 'title', 'is_accessed_recently', 'priority', 'is_favourite',
+            'is_shared', 'is_password_protected', 'is_password_entered', 'password',
+            'author', 'created_at', 'updated_at'
             ).defer('body').order_by('-is_accessed_recently')
 
         notebooks_list_priority = notebooks_list.order_by('priority')
@@ -259,43 +260,6 @@ def update_reminder(request, pk):
         form = RemainderForm(instance=reminder)
     return render(request, 'update_reminder.html', {'form': form, 'reminder': reminder})
 
-# def exportNotebookToJson(request, pk):
-#     # Get the Notebook object or return 404 if not found
-#     notebook = get_object_or_404(Notebook, id=pk)
-    
-#     # Collect pages related to the notebook
-#     pages = Page.objects.filter(notebook=notebook)
-    
-#     # Collect subpages for each page
-#     subpages = SubPage.objects.filter(page__in=pages)
-    
-#     # Serialize the notebook, pages, and subpages
-#     notebook_data = serialize('json', [notebook], indent=4)
-#     pages_data = serialize('json', pages, indent=4)
-#     subpages_data = serialize('json', subpages, indent=4)
-    
-#     # Combine all serialized data into one dictionary
-#     complete_data = {
-#         'notebook': json.loads(notebook_data),
-#         'pages': json.loads(pages_data),
-#         'subpages': json.loads(subpages_data)
-#     }
-    
-#     # Ensure the directory exists
-#     json_directory = os.path.join(settings.BASE_DIR, 'JSONFiles')
-#     os.makedirs(json_directory, exist_ok=True)
-    
-#     # Define file path
-#     file_path = os.path.join(json_directory, f'{notebook.title.replace("/", "-")}.json')  # Avoiding directory traversal issues
-    
-#     # Write the JSON data to a file
-#     with open(file_path, 'w') as file:
-#         json.dump(complete_data, file, indent=4)
-    
-#     messages.success(request, 'Notebook exported successfully!')
-
-#     # Redirect to home page
-#     return redirect('home')
 
 def exportNotebookToJson(request, pk):
     # Get the Notebook object or return 404 if not found
@@ -334,103 +298,89 @@ def exportNotebookToJson(request, pk):
 @login_required
 def loadJsonToModels(request):
     if request.method == 'POST':
-        # Assuming the JSON file is uploaded via a form
         json_file = request.FILES.get('json_file')
-        
+
         if json_file:
             try:
-                # Read the uploaded JSON file
                 json_data = json.loads(json_file.read().decode('utf-8'))
+                user_profile = Profile.objects.get(user=request.user)
 
-                # Get the current logged-in user as the author
-                author = Profile.objects.get(user=request.user)
+                # Dictionary to track created objects
+                notebook_map = {}
+                page_map = {}
 
-                print('JSON data loaded successfully.')
+                with transaction.atomic():
+                    # Create Notebook
+                    for obj in json_data.get('notebook', []):
+                        fields = obj['fields']
+                        author_id = fields.get('author', None)
+                        
+                        # Get author profile, fallback to request.user
+                        author = Profile.objects.filter(id=author_id).first() or user_profile
 
-                # Deserialize and save Notebook data
-                notebook_data = json_data['notebook']
-                for obj in notebook_data:
-                    title = obj['fields']['title']
-                    body = obj['fields']['body']
-                    priority = obj['fields']['priority']
-                    is_favourite = obj['fields']['is_favourite']
-                    is_shared = obj['fields']['is_shared']
-                    created_at = obj['fields']['created_at']
-                    updated_at = obj['fields']['updated_at']
-                    if not Notebook.objects.filter(title=title).exists():
-                        notebook = Notebook.objects.create(
-                            title=title,
-                            body=body,
-                            priority=priority,
-                            is_favourite=is_favourite,
-                            is_shared=is_shared,
-                            created_at=created_at,
-                            updated_at=updated_at,
-                            author=author
+                        notebook, created = Notebook.objects.get_or_create(
+                            title=fields['title'],
+                            defaults={
+                                'body': fields['body'],
+                                'priority': fields['priority'],
+                                'is_favourite': fields['is_favourite'],
+                                'is_shared': fields['is_shared'],
+                                'created_at': fields['created_at'],
+                                'updated_at': fields['updated_at'],
+                                'author': author
+                            }
                         )
-                        print('Notebook saved:', title )
-                        # print(notebook.pk)
+                        notebook_map[obj['pk']] = notebook  # Store reference
 
-                # Deserialize and save Page data
-                pages_data = json_data['pages']
-                for obj in pages_data:
-                    title = obj['fields']['title']
-                    body = obj['fields']['body']
-                    # notebook_title = obj['fields']['notebook']
-                    is_favourite = obj['fields']['is_favourite']
-                    created_at = obj['fields']['created_at']
-                    updated_at = obj['fields']['updated_at']
-                    if Notebook.objects.filter(id=notebook.pk).exists():
-                        notebook = Notebook.objects.get(id=notebook.pk)
-                        page = Page.objects.create(
-                            title=title,
-                            body=body,
-                            notebook=notebook,
-                            is_favourite=is_favourite,
-                            created_at=created_at,
-                            updated_at=updated_at,
-                            author=author
-                        )
-                        print('Page saved:', title)
-                    else:
-                        print('Notebook not found for page:', title)
+                    # Create Pages
+                    for obj in json_data.get('pages', []):
+                        fields = obj['fields']
+                        notebook_id = fields['notebook']
+                        notebook = notebook_map.get(notebook_id)
 
-                # Deserialize and save SubPage data
-                subpages_data = json_data['subpages']
-                for obj in subpages_data:
-                    title = obj['fields']['title']
-                    body = obj['fields']['body']
-                    # page_title = obj['fields']['page']
-                    created_at = obj['fields']['created_at']
-                    updated_at = obj['fields']['updated_at']
-                    if Page.objects.filter(id=page.pk).exists():
-                        page = Page.objects.get(id=page.pk)
-                        SubPage.objects.create(
-                            title=title,
-                            body=body,
-                            page=page,
-                            created_at=created_at,
-                            updated_at=updated_at,
-                            author=author
-                        )
-                        print('Subpage saved:', title)
-                    else:
-                        print('Page not found for subpage:', title)
+                        if notebook:
+                            page, created = Page.objects.get_or_create(
+                                title=fields['title'],
+                                notebook=notebook,
+                                defaults={
+                                    'body': fields['body'],
+                                    'is_favourite': fields['is_favourite'],
+                                    'created_at': fields['created_at'],
+                                    'updated_at': fields['updated_at'],
+                                    'author': notebook.author  # Inherit from notebook
+                                }
+                            )
+                            page_map[obj['pk']] = page  # Store reference
 
-                # return JsonResponse({'message': 'JSON data loaded successfully.'}, status=200)
-                Activity.objects.create(author=author, title='Loaded JSON Data', body='Loaded JSON Data')
-                messages.success(request, 'JSON data loaded successfully!')
+                    # Create SubPages
+                    for obj in json_data.get('subpages', []):
+                        fields = obj['fields']
+                        page_id = fields['page']
+                        page = page_map.get(page_id)
+
+                        if page:
+                            SubPage.objects.create(
+                                title=fields['title'],
+                                body=fields['body'],
+                                page=page,
+                                notebook=page.notebook,
+                                created_at=fields['created_at'],
+                                updated_at=fields['updated_at'],
+                                author=page.author  # Inherit from page
+                            )
+
+                # Log activity
+                Activity.objects.create(author=user_profile, title='Created Notebook from JSON', body='Notebook and its pages were created')
+                messages.success(request, 'Notebook created successfully from uploaded document!')
                 return redirect('home')
+
             except Exception as e:
-                print('Error loading JSON data:', str(e))
-                messages.error(request, 'Error loading JSON data: ' + str(e))
+                messages.error(request, f'Error processing JSON: {str(e)}')
                 return redirect('home')
-                # return JsonResponse({'error': f'Error loading JSON data: {str(e)}'}, status=400)
+
         else:
-            print('No JSON file uploaded.')
             messages.error(request, 'No JSON file uploaded.')
             return redirect('home')
-            # return JsonResponse({'error': 'No JSON file uploaded.'}, status=400)
 
     return render(request, 'load_json.html')
 
