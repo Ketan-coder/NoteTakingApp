@@ -91,7 +91,7 @@ class SubPage(models.Model):
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
