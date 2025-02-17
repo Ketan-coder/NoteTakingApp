@@ -77,7 +77,7 @@
                 <!-- Spinner Card -->
                 <div class="card">
                     <ul class="list-group list-group-flush">
-                        {% for notebook in notebooks_list_priority|slice:"3" %}
+                        {% for notebook in notebooks|slice:"3" %}
                       <li class="list-group-item p-3">
                         <b style="font-weight: 500;">
                         {% comment %} {% if notebook.is_password_protected %}

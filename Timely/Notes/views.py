@@ -22,62 +22,94 @@ import os
 from django.db import transaction
 
 # Uncomment when done with lock
-# from django.views.decorators.cache import cache_page
-# from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 # # Create your views here.
-# @cache_page(60 * 2)  # Cache the page for 2 minutes (adjust as needed)
+# Cache duration (in seconds)
+# CACHE_TIMEOUT = 120  # 2 minutes
+
+# @login_required
 # def index(request):
 #     if request.user.is_authenticated:
+#         start_time = datetime.datetime.now()
+
 #         logined_profile = Profile.objects.get(user=request.user)
 
-#         # Cache invalidation for notebooks_list
+#         # Cache Key Definitions
 #         notebooks_cache_key = f'notebooks_list_{request.user.id}'
+#         pages_cache_key = f'pages_{request.user.id}'
+#         subpages_cache_key = f'subpages_{request.user.id}'
+
+#         # Fetch Notebooks (Use Cache)
 #         notebooks_list = cache.get(notebooks_cache_key)
-#         if not notebooks_list:
-#             notebooks_list = Notebook.objects.filter(author=logined_profile).order_by('priority')
-#             cache.set(notebooks_cache_key, notebooks_list, 60 * 2)  # Cache for 1 minutes
+#         if notebooks_list is None:  # Check for None, not empty list
+#             notebooks_list = Notebook.objects.filter(author=logined_profile).only(
+#                 'id', 'title', 'is_accessed_recently', 'priority', 'is_favourite',
+#                 'is_shared', 'is_password_protected', 'is_password_entered', 'password',
+#                 'author', 'created_at', 'updated_at'
+#             ).defer('body').order_by('-is_accessed_recently')
+#             cache.set(notebooks_cache_key, notebooks_list, CACHE_TIMEOUT)
 #             print('Notebooks list cached successfully.')
 
-#         # Cache invalidation for pages
-#         pages_cache_key = f'pages_{request.user.id}'
+#         notebooks_list_priority = notebooks_list.order_by('priority')
+
+#         # Fetch Pages (Use Cache)
 #         pages = cache.get(pages_cache_key)
 #         if not pages:
-#             pages = Page.objects.filter(notebook__in=notebooks_list)
-#             cache.set(pages_cache_key, pages, 60 * 2)  # Cache for 1 minutes
+#             pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-updated_at')
+#             cache.set(pages_cache_key, list(pages), CACHE_TIMEOUT)
 #             print('Pages cached successfully.')
 
-#         # Repeat this caching pattern for other queries as needed
-#         subpages = SubPage.objects.filter(page__in=pages)
+#         # Fetch SubPages (Use Cache)
+#         subpages = cache.get(subpages_cache_key)
+#         if not subpages:
+#             subpages = SubPage.objects.filter(page__in=pages)
+#             cache.set(subpages_cache_key, list(subpages), CACHE_TIMEOUT)
+#             print('SubPages cached successfully.')
+
+#         # Real-time Queries (No Caching)
 #         activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
 #         sticky_notes = StickyNotes.objects.filter(author=logined_profile)
 #         remainders = Remainder.objects.filter(author=logined_profile).order_by('alert_time')
+
+#         # Favorites
 #         favouritesNotebooks = notebooks_list.filter(is_favourite=True)
 #         favouritesPages = Page.objects.filter(is_favourite=True, notebook__in=favouritesNotebooks)
 #         favouritesRemainders = remainders.filter(is_favourite=True)
+
+#         # Shared Notebooks
 #         sharedNotebooks = SharedNotebook.objects.filter(owner=logined_profile).order_by('-shared_at')
 
-#         # Set up pagination for activities
-#         paginator_activities = Paginator(activities_list, 5)  # Show 5 activities per page
+#         # Pagination Setup
+#         paginator_activities = Paginator(activities_list, 5)
 #         page_number_activities = request.GET.get('page')
 #         activities = paginator_activities.get_page(page_number_activities)
 
-#         # Set up pagination for notebooks
-#         paginator_notebooks = Paginator(notebooks_list, 5)  # Show 5 notebooks per page
+#         paginator_notebooks = Paginator(notebooks_list, 5)
 #         page_number_notebooks = request.GET.get('notebook_page')
 #         notebooks = paginator_notebooks.get_page(page_number_notebooks)
-#         check_remainders()
-#         check_activities()
-#         mark_password_as_not_entered(notebooks_list)
 
-#         context = {'notebooks': notebooks, 'pages': pages, 'logined_profile': logined_profile,
-#                    'activities': activities, 'sticky_notes': sticky_notes, 'subpages': subpages,
-#                    'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks,
-#                    'favouritesPages': favouritesPages, 'favouritesRemainders': favouritesRemainders,
-#                    'sharedNotebooks': sharedNotebooks}
+#         # Background Updates
+#         check_remainders()
+#         mark_password_as_not_entered(notebooks_list)
+#         mark_recently_accessed_as_false(pages, notebooks_list)
+
+#         end_time = datetime.datetime.now()
+#         print(f"Time taken: {end_time - start_time}")
+
+#         context = {
+#             'notebooks': notebooks, 'notebooks_list_priority': notebooks_list_priority,
+#             'logined_profile': logined_profile, 'activities': activities, 'sticky_notes': sticky_notes,
+#             "pages": pages, "subpages": subpages, 'remainders': remainders,
+#             'favouritesNotebooks': favouritesNotebooks, 'favouritesPages': favouritesPages,
+#             'favouritesRemainders': favouritesRemainders, 'sharedNotebooks': sharedNotebooks
+#         }
 
 #         return render(request, "index.html", context)
 #     else:
 #         return redirect('login')
+
+
 # Create your views here.
 def index(request):
     if request.user.is_authenticated:
@@ -304,32 +336,35 @@ def loadJsonToModels(request):
             try:
                 json_data = json.loads(json_file.read().decode('utf-8'))
                 user_profile = Profile.objects.get(user=request.user)
-
-                # Dictionary to track created objects
+                local_now = timezone.localtime(timezone.now())
                 notebook_map = {}
                 page_map = {}
 
-                with transaction.atomic():
-                    # Create Notebook
+                with transaction.atomic():  # Ensures atomicity
+                    # Create Notebooks
                     for obj in json_data.get('notebook', []):
                         fields = obj['fields']
                         author_id = fields.get('author', None)
-                        
-                        # Get author profile, fallback to request.user
-                        author = Profile.objects.filter(id=author_id).first() or user_profile
+                    
+                        # Find the real author, fallback to None (We don't want to change ownership)
+                        real_author = Profile.objects.filter(id=author_id).first()
+                        author = user_profile  # Always assign request.user
 
-                        notebook, created = Notebook.objects.get_or_create(
+                        # Create new notebook, no update, only creation
+                        notebook = Notebook.objects.create(
                             title=fields['title'],
-                            defaults={
-                                'body': fields['body'],
-                                'priority': fields['priority'],
-                                'is_favourite': fields['is_favourite'],
-                                'is_shared': fields['is_shared'],
-                                'created_at': fields['created_at'],
-                                'updated_at': fields['updated_at'],
-                                'author': author
-                            }
+                            body=fields['body'],
+                            priority=fields['priority'],
+                            is_favourite=fields['is_favourite'],
+                            is_shared=fields['is_shared'],
+                            author=author
                         )
+
+                        # Manually set timestamps
+                        notebook.created_at = local_now
+                        notebook.updated_at = local_now
+                        notebook.save()
+
                         notebook_map[obj['pk']] = notebook  # Store reference
 
                     # Create Pages
@@ -339,18 +374,17 @@ def loadJsonToModels(request):
                         notebook = notebook_map.get(notebook_id)
 
                         if notebook:
-                            page, created = Page.objects.get_or_create(
+                            # Create new page, no update, only creation
+                            page = Page.objects.create(
                                 title=fields['title'],
                                 notebook=notebook,
-                                defaults={
-                                    'body': fields['body'],
-                                    'is_favourite': fields['is_favourite'],
-                                    'created_at': fields['created_at'],
-                                    'updated_at': fields['updated_at'],
-                                    'author': notebook.author  # Inherit from notebook
-                                }
+                                body=fields['body'],
+                                is_favourite=fields['is_favourite'],
+                                created_at=local_now,
+                                updated_at=local_now,
+                                author=notebook.author
                             )
-                            page_map[obj['pk']] = page  # Store reference
+                            page_map[obj['pk']] = page  
 
                     # Create SubPages
                     for obj in json_data.get('subpages', []):
@@ -364,15 +398,25 @@ def loadJsonToModels(request):
                                 body=fields['body'],
                                 page=page,
                                 notebook=page.notebook,
-                                created_at=fields['created_at'],
-                                updated_at=fields['updated_at'],
-                                author=page.author  # Inherit from page
+                                created_at=local_now,
+                                updated_at=local_now,
+                                author=page.author  
                             )
+                    # Format the time as "12 December, 2024 - 01:50"
+                    formatted_time = local_now.strftime('%d %B, %Y - %H:%M')
 
-                # Log activity
-                Activity.objects.create(author=user_profile, title='Created Notebook from JSON', body='Notebook and its pages were created')
-                messages.success(request, 'Notebook created successfully from uploaded document!')
-                return redirect('home')
+                    # Log activity in the **real author's profile** if they exist
+                    if real_author and real_author != user_profile:
+                        Activity.objects.create(
+                            author=real_author,
+                            title='Notebook Added',
+                            body=f"'{notebook.title}' Notebook was added by {user_profile.user.username} on {formatted_time}."
+                        )
+
+                    # Log activity
+                    Activity.objects.create(author=user_profile, title='Created Notebook from JSON', body='Notebook and its pages were created')
+                    messages.success(request, 'Notebook created successfully from uploaded document!')
+                    return redirect('home')
 
             except Exception as e:
                 messages.error(request, f'Error processing JSON: {str(e)}')
@@ -383,6 +427,7 @@ def loadJsonToModels(request):
             return redirect('home')
 
     return render(request, 'load_json.html')
+
 
 def incrementPriority(request, pk):
     notebook = Notebook.objects.get(id=pk)
