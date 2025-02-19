@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %} Debug Mode {% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="card p-4 border-danger shadow-lg">
+        <h2 class="text-danger">⚠️ Debug Mode: Error Occurred</h2>
+        <p class="lead">An error has been encountered in your application.</p>
+        <hr>
+        <h4 class="text-warning">Exception Details:</h4>
+        <pre class="bg-dark text-light p-3 rounded">{{ exception }}</pre>
+
+        <h4 class="mt-3">Request Path:</h4>
+        <pre class="bg-dark text-light p-3 rounded">{{ path }}</pre>
+
+        <h4 class="mt-3">Method:</h4>
+        <pre class="bg-dark text-light p-3 rounded">{{ method }}</pre>
+
+        <h4 class="mt-3">Traceback:</h4>
+        <pre class="bg-dark text-light p-3 rounded">{{ traceback }}</pre>
+
+        <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+    </div>
+</div>
+{% endblock %}
