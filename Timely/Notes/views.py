@@ -170,7 +170,7 @@ def index(request):
 
 #     return render(request, "components/notebook_body.html", {"body": content})
 
-def fetch_notebook_contents(request, notebook_id, page_id=None, subpage_id=None):
+def fetch_notebook_contents(request, notebook_id=None, page_id=None, subpage_id=None):
     """Fetch the body content of a notebook, page, or subpage dynamically for HTMX as JSON."""
     
     content = None  # Default empty content
@@ -179,9 +179,11 @@ def fetch_notebook_contents(request, notebook_id, page_id=None, subpage_id=None)
         content = get_object_or_404(SubPage, id=subpage_id).body
     elif page_id:
         content = get_object_or_404(Page, id=page_id).body
-    else:
+    elif notebook_id:
         notebook = get_object_or_404(Notebook, id=notebook_id, author=request.user.profile)
         content = notebook.body  # Ensure we fetch the correct body
+    else:
+        return JsonResponse({"error": "Invalid request"},status=400)
 
     return JsonResponse({"body": content})
     

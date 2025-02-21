@@ -4,7 +4,9 @@ from . import views
 
 urlpatterns = [
     path("", login_required(views.index), name="home"),
-    re_path(r'^fetching-contents/(?P<notebook_id>\d+)(?:/(?P<page_id>\d+))?(?:/(?P<subpage_id>\d+))?/$',login_required(views.fetch_notebook_contents),name="fetch_notebook_pages"),
+    path('fetching-contents/notebook/<int:notebook_id>/', login_required(views.fetch_notebook_contents), name="fetch_notebook_notebook"),
+    path('fetching-contents/page/<int:page_id>/', login_required(views.fetch_notebook_contents), name="fetch_notebook_pages"),
+    path('fetching-contents/subpage/<int:subpage_id>/', login_required(views.fetch_notebook_contents), name="fetch_notebook_subpages"),
     path('create-notebook/', login_required(views.notebook_form), name='create_notebook'),
     path('notebook/<int:notebook_id>/', login_required(views.notebook_form), name='update_notebook'),
     path("autosave/<int:pk>/", login_required(views.autosave_notebook), name="autosave_notebook"),

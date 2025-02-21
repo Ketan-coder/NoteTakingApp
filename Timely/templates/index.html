@@ -450,10 +450,11 @@
                   <div class="ps-4 mt-2">
                     <ul class="list-unstyled mb-0" id="notebook-pages-{{ notebook.id }}">
                       {% for page in notebook.page_set.all %}
-                      <li class="p-1">&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-page-{{ page.id }}">{{ page.title }}</a></li>
+                      
+                      <li class="p-1">&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-page-{{ page.id }}" data-page-id="{{ page.id }}" class="page-title">{{ page.title }}</a></li>
                         <ul class="list-unstyled mb-1">
                           {% for subpage in page.subpage_set.all %}
-                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}">{{ subpage.title }}</a></li>
+                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}" data-subpage-id="{{ subpage.id }}" class="subpage-title">{{ subpage.title }}</a></li>
                           {% endfor %}
                         </ul>
                       {% empty %}
@@ -474,7 +475,7 @@
                       style="display: none;">
               </button> {% endcomment %}
               <button id="load-content-{{ notebook.id }}"
-                          hx-get="{% url 'fetch_notebook_pages' notebook.id %}"
+                          hx-get="{% url 'fetch_notebook_notebook' notebook_id=notebook.id %}"
                           hx-trigger="click"
                           hx-target="#notebook-body-{{ notebook.id }}"
                           hx-ext="json-enc"
@@ -483,6 +484,10 @@
                           data-notebook-id="{{ notebook.id }}"
                           style="display: none;">
                   </button>
+            </div>
+            <div class="text-center" id="loading-spinner-{{ notebook.id }}">
+              <div class="spinner-border text-primary mt-3 mb-2 mt-lg-5 specific-w-50 specific-h-50" role="status" aria-hidden="true"></div>
+              <p>Loading Text... Hang on!</p>
             </div>
             {% comment %}{{ notebook.body|safe }} {% endcomment %}
           </div>
@@ -599,7 +604,7 @@
                   <div class="ps-4 mt-2">
                     <ul class="list-unstyled mb-0">
                       {% for subpage in page.subpage_set.all %}
-                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}">{{ subpage.title }}</a></li>
+                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}" data-subpage-id="{{ subpage.id }}" class="subpage-title">{{ subpage.title }}</a></li>
                       {% empty %}
                       <li class="p-1">&ndash; No Pages</li>
                       {% endfor %}
@@ -609,7 +614,23 @@
                 </div>
           </div>
           <div class="col-9">
-            {{ page.body|safe }}
+            <div id="page-body-{{ page.id }}" data-page-id="{{ page.id }}">
+              <button id="load-content-page-{{ page.id }}"
+                          hx-get="{% url 'fetch_notebook_pages' page_id=page.id %}"
+                          hx-trigger="click"
+                          hx-target="#page-body-{{ page.id }}"
+                          hx-ext="json-enc"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="updateNotebookBody(event)"
+                          data-page-id="{{ page.id }}"
+                          style="display: none;">
+                  </button>
+                  <div class="text-center" id="loading-spinner-page-{{ page.id }}">
+                    <div class="spinner-border text-primary mt-3 mb-2 mt-lg-5 specific-w-50 specific-h-50" role="status" aria-hidden="true"></div>
+                    <p>Loading Text... Hang on!</p>
+                  </div>
+            </div>
+            {% comment %} {{ page.body|safe }} {% endcomment %}
           </div>
         </div>
         <!-- Pop Over -->
@@ -649,7 +670,23 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        {{ page.body|safe }}
+        <div id="subpage-body-{{ page.id }}" data-subpage-id="{{ page.id }}">
+              <button id="load-content-subpage-{{ page.id }}"
+                          hx-get="{% url 'fetch_notebook_subpages' subpage_id=page.id %}"
+                          hx-trigger="click"
+                          hx-target="#subpage-body-{{ page.id }}"
+                          hx-ext="json-enc"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="updateNotebookBody(event)"
+                          data-subpage-id="{{ page.id }}"
+                          style="display: none;">
+                  </button>
+                  <div class="text-center" id="loading-spinner-subpage-{{ page.id }}">
+                    <div class="spinner-border text-primary mt-3 mb-2 mt-lg-5 specific-w-50 specific-h-50" role="status" aria-hidden="true"></div>
+                    <p>Loading Text... Hang on!</p>
+                  </div>
+            </div>
+        {% comment %} {{ page.body|safe }} {% endcomment %}
         <!-- Pop Over -->
         <!-- <div class="mb-4">
           <button type="button" class="btn" data-bs-toggle="popover" data-bs-title="Title of the popover" data-bs-content="Content of the popover that spans across multiple lines.">
@@ -822,10 +859,34 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".page-title").forEach(function (title) {
+        title.addEventListener("click", function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            let notebookId = this.getAttribute("data-page-id");
+            let loadButton = document.getElementById("load-content-page-" + notebookId);
+            if (loadButton) {
+                loadButton.click(); // Auto-click the hidden HTMX button
+            }
+        });
+    });
+});
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".subpage-title").forEach(function (title) {
+        title.addEventListener("click", function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            let notebookId = this.getAttribute("data-subpage-id");
+            let loadButton = document.getElementById("load-content-subpage-" + notebookId);
+            if (loadButton) {
+                loadButton.click(); // Auto-click the hidden HTMX button
+            }
+        });
+    });
+});
 </script>
 <script>
 document.body.addEventListener("htmx:afterRequest", function(event) {
-    console.log("HTMX request completed! Event:", event);
+    
 
     if (!event.detail || !event.detail.xhr) {
         console.error("Invalid event details. No response.");
@@ -833,11 +894,11 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
     }
 
     let responseText = event.detail.xhr.responseText;
-    console.log("Raw JSON Response:", responseText);
+
 
     try {
         let data = JSON.parse(responseText);
-        console.log("Parsed Data:", data);
+        
 
         // Get the correct notebook ID from the event target
         let notebookElement = event.detail.target;
@@ -849,12 +910,90 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
         }
 
         let target = document.getElementById("notebook-body-" + notebookId);
+        let spinner = document.getElementById("loading-spinner-" + notebookId);
 
         if (target) {
-            console.log("Updating target:", target);
+            
+            spinner.style.display = "none";
             target.innerHTML = data.body;
         } else {
             console.error("Target element not found: #notebook-body-" + notebookId);
+        }
+    } catch (error) {
+        console.error("Error parsing JSON response:", error);
+    }
+});
+document.body.addEventListener("htmx:afterRequest", function(event) {
+    
+
+    if (!event.detail || !event.detail.xhr) {
+        console.error("Invalid event details. No response.");
+        return;
+    }
+
+    let responseText = event.detail.xhr.responseText;
+
+
+    try {
+        let data = JSON.parse(responseText);
+        
+
+        // Get the correct notebook ID from the event target
+        let notebookElement = event.detail.target;
+        let notebookId = notebookElement.getAttribute("data-page-id");
+
+        if (!notebookId) {
+            console.error("Notebook ID not found!");
+            return;
+        }
+
+        let target = document.getElementById("page-body-" + notebookId);
+        let spinner = document.getElementById("loading-spinner-page-" + notebookId);
+
+        if (target) {
+            
+            target.innerHTML = data.body;
+            spinner.style.display = "none";
+        } else {
+            console.error("Target element not found: #page-body-" + notebookId);
+        }
+    } catch (error) {
+        console.error("Error parsing JSON response:", error);
+    }
+});
+document.body.addEventListener("htmx:afterRequest", function(event) {
+    
+
+    if (!event.detail || !event.detail.xhr) {
+        console.error("Invalid event details. No response.");
+        return;
+    }
+
+    let responseText = event.detail.xhr.responseText;
+
+
+    try {
+        let data = JSON.parse(responseText);
+        
+
+        // Get the correct notebook ID from the event target
+        let notebookElement = event.detail.target;
+        let notebookId = notebookElement.getAttribute("data-subpage-id");
+
+        if (!notebookId) {
+            console.error("Notebook ID not found!");
+            return;
+        }
+
+        let target = document.getElementById("subpage-body-" + notebookId);
+        let spinner = document.getElementById("loading-spinner-subpage-" + notebookId);
+
+        if (target) {
+            
+            target.innerHTML = data.body;
+            spinner.style.display = "none";
+        } else {
+            console.error("Target element not found: #subpage-body-" + notebookId);
         }
     } catch (error) {
         console.error("Error parsing JSON response:", error);
