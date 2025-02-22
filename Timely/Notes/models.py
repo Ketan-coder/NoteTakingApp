@@ -106,7 +106,7 @@ class SubPage(models.Model):
     
 class Remainder(models.Model):
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     alert_time = models.DateTimeField()
     is_over = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
@@ -118,13 +118,23 @@ class Remainder(models.Model):
     def __str__(self) -> str:
         return self.title
     
+    # def save(self, *args, **kwargs):
+    #     # if not self.updated_at:
+    #     #     self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
+    #     if self.alert_time < timezone.now() + datetime.timedelta(hours=5, minutes=30):
+    #         self.is_over = True
+    #     else:
+    #         self.is_over = False
+    #     super().save(*args, **kwargs)
     def save(self, *args, **kwargs):
-        # if not self.updated_at:
-        #     self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-        if self.alert_time < timezone.now() + datetime.timedelta(hours=5, minutes=30):
-            self.is_over = True
-        else:
-            self.is_over = False
+        if self.alert_time and timezone.is_naive(self.alert_time):
+            self.alert_time = timezone.make_aware(self.alert_time, timezone.get_current_timezone())
+
+        # Ensure timezone-aware comparison
+        now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
+        
+        self.is_over = self.alert_time < now_with_offset
+        
         super().save(*args, **kwargs)
     
 class StickyNotes(models.Model):

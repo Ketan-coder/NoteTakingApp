@@ -17,7 +17,7 @@
           hx-post="{% url 'create_page' notebook_pk=notebook.id %}" 
       {% endif %}
       {% if page %} hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}
-      class="notebook-form" hx-push-url="true">
+      class="notebook-form" hx-push-url="false">
 
         {% csrf_token %}
 

@@ -25,7 +25,7 @@
               hx-post="{% url 'create_notebook' %}" 
           {% endif %}
           hx-trigger="{% if notebook %} keyup changed delay:500ms {% else %}submit{% endif %}"
-          {% if notebook %} hx-target="#save-status" {% endif %} class="notebook-form" hx-push-url="true">
+          {% if notebook %} hx-target="#save-status" hx-push-url="false" {% endif %} class="notebook-form" hx-push-url="true">
         
         {% comment %} {% csrf_token %} {% endcomment %}
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -49,8 +49,8 @@
         <!-- Priority Input -->
         <div class="input-group has-validation">
             <span class="input-group-text" id="1-username-prepend">^</span>
-        <input type="number" id="id_priority" name="priority" class="form-control notebook-priority" required
-               placeholder="Priority" value="{{ notebook.priority|default_if_none:'' }}" style="background: none; border: none; color: white;"
+        <input type="number" id="id_priority" name="priority" class="form-control notebook-priority" required max="5" min="1"
+               placeholder="Priority (1 lower, 5 highest)" value="{{ notebook.priority|default_if_none:'' }}" style="background: none; border: none; color: white;"
                {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         </div>
         <!-- Password Protection -->

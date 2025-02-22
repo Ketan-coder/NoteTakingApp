@@ -1,47 +1,147 @@
 {% extends 'base.html' %}
-
 {% block title %}
     Timely | Update Sticky Notes
 {% endblock title %}
 
-{% block head %}
-    <style>
-        #id_title, #id_body {
-            display: block;
-            margin-bottom: 10px;
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 20px;
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-            color: #fff;
-        }
-    </style>
-{% endblock head %}
-
 {% block body %}
-<div class="m-3">
-    <div class="card">
-        <div class="card-body">
-            <h1 class="card-title">Update Sticky Notes</h1>
-            <form action="{% url 'update_sticky_notes' stickynote.id %}" method="post">
-                {% csrf_token %}
-                <div class="form-group m-2 p-2">
-                    {{ form.title.label_tag }}
-                    {{ form.title }}
-                </div>
-                <div class="form-group m-2 p-2">
-                    {{ form.body.label_tag }}
-                    {{ form.body }}
-                </div>
-                <!-- Add any other fields from StickyNotesForm as needed -->
-                <div class="form-group align-items-end">
-                    <input type="submit" value="Update" class="btn btn-primary">
-                </div>
-            </form>
-        </div>
-    </div>
+
+<div class="container mt-4">
+    <!-- Save Status Indicator -->
+    <p id="save-status" class="mt-2 text-muted text-start"></p>
+
+    <!-- Sticky Notes Form -->
+    <form method="post"
+          hx-post="{% url 'autosave_sticky_notes' stickynote_id=stickynote.id %}"
+          hx-trigger="keyup changed delay:500ms"
+          hx-target="#save-status"
+          hx-push-url="false">
+        
+        {% csrf_token %}
+
+    <!-- Sticky Note Title -->
+    <input type="text" id="id_title" name="title"
+           class="notebook-title custom-input"
+           placeholder="Sticky Note Title..."
+           value="{{ stickynote.title|default_if_none:'' }}"
+           hx-post="{% url 'autosave_sticky_notes' stickynote_id=stickynote.id %}"
+           hx-trigger="keyup changed delay:500ms"
+           hx-target="#save-status"
+           hx-push-url="false">
+
+    <!-- Sticky Note Body -->
+    <textarea id="id_body" name="body"
+              class="notebook-body form-control mt-3"
+              placeholder="Write your sticky note here..."
+              hx-post="{% url 'autosave_sticky_notes' stickynote_id=stickynote.id %}"
+              hx-trigger="keyup changed delay:500ms"
+              hx-target="#save-status"
+              hx-push-url="false">{{ stickynote.body|default_if_none:'' }}</textarea>
+
+</form>
+
 </div>
+
+{% block script %}
+<script>
+    document.body.addEventListener("htmx:afterRequest", function(event) {
+        let responseText = event.detail.xhr.responseText.trim();
+
+        let saveStatus = document.getElementById("save-status");
+        if (saveStatus) {
+            if (responseText === "Saved") {
+                saveStatus.textContent = "Saved";
+            }
+        }
+    });
+</script>
+{% endblock script %}
+
+<style>
+    html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    }
+
+    .container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #editor-container {
+        flex: 1;
+        height: calc(100vh - 150px); /* Adjust 150px based on header, padding, etc. */
+        min-height: 500px; /* Fallback height */
+        border-radius: 0;
+    }
+
+    .ql-container {
+        height: 100%;
+    }
+
+    .ql-editor {
+        min-height: 100%;
+        white-space: normal !important;
+        border-radius: 0;
+    }
+
+    .ql-toolbar, .ql-snow {
+        border: 1px solid transparent !important;
+    }
+
+    /* Force inputs to blend into background */
+    .custom-input {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: white !important;
+        font-size: 1.5rem !important;
+        width: 100% !important;
+        padding: 8px 0 !important;
+        font-weight: bold !important;
+    }
+
+    /* Optional: Make placeholder text subtle */
+    .custom-input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* Remove focus outline */
+    .custom-input:focus {
+        outline: none !important;
+    }
+
+    /* notebook-style Title */
+    .notebook-title {
+        font-size: 32px;
+        font-weight: bold;
+        border: none;
+        outline: none;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* .notebook-title:hover, .notebook-title:focus{
+        border-bottom: 1px solid black;
+    } */
+
+    /* notebook-style Body */
+    .notebook-body {
+        border: none;
+        outline: none;
+        min-height: 300px;
+        width: 100%;
+        resize: none;
+        font-size: 18px;
+    }
+
+    /* Remove input borders */
+    .form-control {
+        border: none;
+        outline: none;
+    }
+</style>
+
 {% endblock body %}

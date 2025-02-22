@@ -1,6 +1,6 @@
 import datetime
 import json
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -575,19 +575,49 @@ def deleteAllActivities(request):
     messages.success(request, 'All activities deleted successfully!')
     return redirect('home')
 
+# def updateStickyNotes(request, pk):
+#     stickynote = StickyNotes.objects.get(id=pk)
+#     logined_profile = Profile.objects.get(user=request.user)
+#     if request.method == 'POST':
+#         form = StickyNotesForm(request.POST, instance=stickynote)
+#         if form.is_valid():
+#             form.save()
+#             Activity.objects.create(author=logined_profile, title='Updated Sticky Note', body=f'Updated Sticky Note with title of: {stickynote.title}')
+#             messages.success(request, 'Sticky note updated successfully!')
+#             return redirect('home')
+#     else:
+#         form = StickyNotesForm(instance=stickynote)
+#     return render(request, 'update_sticky_notes.html', {'form': form, 'stickynote': stickynote})
 def updateStickyNotes(request, pk):
-    stickynote = StickyNotes.objects.get(id=pk)
+    """Handles updating sticky notes with autosave support."""
     logined_profile = Profile.objects.get(user=request.user)
-    if request.method == 'POST':
-        form = StickyNotesForm(request.POST, instance=stickynote)
-        if form.is_valid():
-            form.save()
-            Activity.objects.create(author=logined_profile, title='Updated Sticky Note', body=f'Updated Sticky Note with title of: {stickynote.title}')
-            messages.success(request, 'Sticky note updated successfully!')
-            return redirect('home')
-    else:
-        form = StickyNotesForm(instance=stickynote)
-    return render(request, 'update_sticky_notes.html', {'form': form, 'stickynote': stickynote})
+    stickynote = get_object_or_404(StickyNotes, id=pk, author=logined_profile)
+
+    if request.method == "POST":
+        title = request.POST.get("title", stickynote.title)
+        body = request.POST.get("body", stickynote.body)
+
+        updated = False
+        if stickynote.title != title:
+            stickynote.title = title
+            updated = True
+        if stickynote.body != body:
+            stickynote.body = body
+            updated = True
+
+        if updated:
+            stickynote.save()
+            Activity.objects.create(
+                author=logined_profile,
+                title="Updated Sticky Note",
+                body=f"Updated Sticky Note with title: {stickynote.title}"
+            )
+            messages.success(request, "Sticky note updated successfully!")
+            return HttpResponse("Saved")
+
+        return HttpResponse("")  # No changes, return empty response
+
+    return render(request, "update_sticky_notes.html", {"stickynote": stickynote})
 
 def create_remainder(request):
     logined_profile = Profile.objects.get(user=request.user)
@@ -848,6 +878,125 @@ def autosave_subpage(request,pk):
         return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
     
     return JsonResponse({"message": "Error"}, status=400)
+
+def remainder_form(request, remainder_pk=None):
+    """Handles both creating and updating a reminder in a single template."""
+    logined_profile = Profile.objects.get(user=request.user)
+    remainder = None
+
+    # If editing, fetch the existing remainder
+    if remainder_pk:
+        remainder = get_object_or_404(Remainder, id=remainder_pk, author=logined_profile)
+
+    if request.method == "POST":
+        title = request.POST.get("title", remainder.title if remainder else "Untitled")
+        body = request.POST.get("body", remainder.body if remainder else "")
+        is_favourite = request.POST.get("is_favourite", "false") == "true"
+        is_completed = request.POST.get("is_completed", "false") == "true"
+
+        # Convert alert_time from string to datetime (Handle empty value)
+        alert_time_str = request.POST.get("alert_time", "")
+        try:
+            alert_time = datetime.datetime.strptime(alert_time_str, "%Y-%m-%dT%H:%M") if alert_time_str else timezone.now()
+        except ValueError:
+            alert_time = timezone.now()  # Fallback to current time if invalid
+
+        if remainder:
+            # Update existing remainder
+            remainder.title = title
+            remainder.body = body
+            remainder.alert_time = alert_time
+            remainder.is_favourite = is_favourite
+            remainder.is_completed = is_completed
+            remainder.save()
+            messages.success(request, "Reminder updated successfully!")
+            return JsonResponse({"status": "saved", "title": remainder.title, "body": remainder.body, "alert_time": remainder.alert_time})
+
+        else:
+            # Create new remainder
+            new_remainder = Remainder.objects.create(
+                title=title, body=body, alert_time=alert_time,
+                is_favourite=is_favourite, is_completed=is_completed, author=logined_profile
+            )
+            messages.success(request, "Reminder created successfully!")
+            return JsonResponse({"redirect": f"/remainder/{new_remainder.pk}/"})
+
+    return render(request, "remainder_form.html", {"remainder": remainder})
+
+def autosave_reminder(request, remainder_pk):
+    """Autosaves a reminder's title, body, alert time, and status."""
+    if request.method == "POST":
+        logined_profile = Profile.objects.get(user=request.user)
+        remainder = get_object_or_404(Remainder, id=remainder_pk, author=logined_profile)
+
+        # Get updated fields from request
+        title = request.POST.get("title", remainder.title)
+        body = request.POST.get("body", remainder.body)
+        is_favourite = request.POST.get("is_favourite", "false") == "true"
+        is_completed = request.POST.get("is_completed", "false") == "true"
+
+        # Convert alert_time from string to datetime
+        alert_time_str = request.POST.get("alert_time", None)
+        try:
+            alert_time = datetime.datetime.strptime(alert_time_str, "%Y-%m-%dT%H:%M") if alert_time_str else remainder.alert_time
+            alert_time = timezone.make_aware(alert_time, timezone.get_current_timezone())  # Make it timezone-aware
+        except (ValueError, TypeError):
+            alert_time = remainder.alert_time  # Fallback if invalid format
+
+        # Update only if values have changed
+        updated = False
+        if remainder.title != title:
+            remainder.title = title
+            updated = True
+        if remainder.body != body:
+            remainder.body = body
+            updated = True
+        if remainder.alert_time != alert_time:
+            remainder.alert_time = alert_time
+            updated = True
+        if remainder.is_favourite != is_favourite:
+            remainder.is_favourite = is_favourite
+            updated = True
+        if remainder.is_completed != is_completed:
+            remainder.is_completed = is_completed
+            updated = True
+
+        if updated:
+            remainder.save()
+            return HttpResponse("Saved")
+        else:
+            return HttpResponse("")  # No updates needed
+
+    return HttpResponse("Invalid request", status=400)
+
+def autosave_sticky_notes(request, stickynote_id):
+    """Autosaves a user's sticky note when updated."""
+    if request.method == "POST":
+        logined_profile = Profile.objects.get(user=request.user)
+        stickynote = get_object_or_404(StickyNotes, id=stickynote_id, author=logined_profile)
+
+        # Redirect if user visits this URL directly
+        if not request.headers.get("HX-Request"):  
+            return HttpResponseRedirect(f"/stickynote/{stickynote.id}/")  # Redirect to correct page
+
+        title = request.POST.get("title", stickynote.title)
+        body = request.POST.get("body", stickynote.body)
+
+        updated = False
+        if stickynote.title != title:
+            stickynote.title = title
+            updated = True
+        if stickynote.body != body:
+            stickynote.body = body
+            updated = True
+
+        if updated:
+            stickynote.save()
+            return HttpResponse("Saved")
+        else:
+            return HttpResponse("")  # No updates needed
+
+    return HttpResponse("Invalid request", status=400)
 
 @login_required
 def search(request):
