@@ -5,6 +5,18 @@
     Timely
 {% endblock title %}
 
+{% block head %}
+<style>
+  .drag-handle {
+    cursor: grab;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+</style>
+{% endblock head %}
+
 {% block body %}
 <!-- JavaScript tab plugin (alternate markup) -->
 <div class="m-2">
@@ -455,7 +467,18 @@
                     <ul class="list-unstyled mb-0" id="notebook-pages-{{ notebook.id }}">
                       {% for page in notebook.page_set.all %}
                       
-                      <li class="p-1">&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-page-{{ page.id }}" data-page-id="{{ page.id }}" class="page-title">{{ page.title }}</a></li>
+                      <li class="p-1" data-id="{{ page.id }}">
+                        <!-- Drag Icon -->
+                      <svg class="drag-handle me-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="7" cy="5" r="1.5"></circle>
+                          <circle cx="17" cy="5" r="1.5"></circle>
+                          <circle cx="7" cy="12" r="1.5"></circle>
+                          <circle cx="17" cy="12" r="1.5"></circle>
+                          <circle cx="7" cy="19" r="1.5"></circle>
+                          <circle cx="17" cy="19" r="1.5"></circle>
+                      </svg>
+                      <!-- Drag Icon -->
+                      <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-page-{{ page.id }}" data-page-id="{{ page.id }}" class="page-title">{{ page.title }}</a></li>
                         <ul class="list-unstyled mb-1">
                           {% for subpage in page.subpage_set.all %}
                           <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}" data-subpage-id="{{ subpage.id }}" class="subpage-title">{{ subpage.title }}</a></li>
@@ -1007,6 +1030,46 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
 </script>
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Select all notebook page lists
+    document.querySelectorAll("ul[id^='notebook-pages-']").forEach(pageList => {
+        new Sortable(pageList, {
+            animation: 150,
+            ghostClass: "sortable-ghost",
+            handle: ".drag-handle",
+            onEnd: function (evt) {
+                let notebookId = pageList.id.split("-").pop(); // Extract notebook ID
+                let pages = [];
+                
+                pageList.querySelectorAll("li[data-id]").forEach((item, index) => {
+                    pages.push({ id: item.dataset.id, order: index + 1 }); // Assign new order
+                });
+
+                // Send the new order to your Django backend
+                fetch("{% url 'update_page_order'  %}", { // Ensure the correct URL
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify({ notebook_id: notebookId, pages: pages })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        console.log("Page order updated successfully!");
+                    } else {
+                        console.error("Error updating page order.");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            }
+        });
+    });
+});
+</script>
 
 
 {% endblock script %}

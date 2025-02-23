@@ -12,6 +12,7 @@ urlpatterns = [
     path("autosave/<int:pk>/", login_required(views.autosave_notebook), name="autosave_notebook"),
     path('create-page/<int:notebook_pk>/', login_required(views.page_form), name='create_page'),
     path('page/<int:page_pk>/', login_required(views.page_form), name='update_page'),
+    path("update-page-order/", login_required(views.update_page_order), name="update_page_order"),
     path("autosave/page/<int:pk>/", login_required(views.autosave_page), name="autosave_page"),
     path("autosave/subpage/<int:pk>/", login_required(views.autosave_subpage), name="autosave_subpage"),
     path('create-remainder/', login_required(views.remainder_form), name='create_remainder'),

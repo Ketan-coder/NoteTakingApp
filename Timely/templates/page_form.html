@@ -31,6 +31,13 @@
                placeholder="Untitled" value="{{ page.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
                {% if page %} hx-post="{% url 'autosave_page' page.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         
+        <!-- Order Input -->
+        <div class="input-group has-validation">
+            <span class="input-group-text" >></span>
+            <input type="number" id="id_order" name="order" class="form-control notebook-priority" required 
+               placeholder="Ordering Value e.g 1" value="{{ page.order|default_if_none:'' }}" style="background: none; border: none; color: white;"
+               {% if page %} hx-post="{% url 'autosave_page' page.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+        </div>
 
         <!-- Rich Text Editor -->
         <div id="editor-container" class="border rounded"></div>

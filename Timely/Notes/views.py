@@ -20,7 +20,7 @@ from .models import Notebook, Page, SubPage
 import json
 import os
 from django.db import transaction
-
+from django.views.decorators.csrf import csrf_exempt
 # Uncomment when done with lock
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
@@ -123,13 +123,13 @@ def index(request):
             ).defer('body').order_by('-is_accessed_recently')
 
         notebooks_list_priority = notebooks_list.order_by('priority')
-        pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-updated_at')
+        pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-order')
         subpages = SubPage.objects.filter(page__in=pages)
         activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
         sticky_notes = StickyNotes.objects.filter(author=logined_profile)
         remainders = Remainder.objects.filter(author=logined_profile).order_by('alert_time')
         favouritesNotebooks = notebooks_list.filter(is_favourite=True)
-        favouritesPages = Page.objects.filter(is_favourite=True, notebook__in=favouritesNotebooks)
+        favouritesPages = Page.objects.filter(notebook__in=favouritesNotebooks)
         favouritesRemainders = remainders.filter(is_favourite=True)
         sharedNotebooks = SharedNotebook.objects.filter(owner=logined_profile).order_by('-shared_at')
         
@@ -720,6 +720,7 @@ def page_form(request, page_pk=None, notebook_pk=None):
             # Update notebook
             page.title = request.POST.get("title", page.title)
             page.body = request.POST.get("body", page.body)
+            page.order = request.POST.get("order", page.order)
 
             page.save()
             return JsonResponse({"status": "saved", "title": page.title, "body": page.body})
@@ -728,9 +729,10 @@ def page_form(request, page_pk=None, notebook_pk=None):
             # Create new notebook
             title = request.POST.get("title", "Untitled")
             body = request.POST.get("body", "")
+            order = request.POST.get("order", 1)
 
             new_page = Page.objects.create(
-                title=title, body=body, notebook=notebook, author=logged_in_profile
+                title=title, body=body, notebook=notebook, order=order,author=logged_in_profile
             )
             return JsonResponse({"redirect": f"/page/{new_page.pk}/"})
 
@@ -764,12 +766,29 @@ def autosave_page(request,pk):
         # Update fields
         page.title = request.POST.get("title", page.title)
         page.body = request.POST.get("body", page.body)
+        page.order = request.POST.get("order", page.order)
 
         # Save the updated notebook
         page.save()
         return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
     
     return JsonResponse({"message": "Error"}, status=400)
+
+@csrf_exempt
+def update_page_order(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        notebook_id = data.get("notebook_id")
+        
+        if not notebook_id:
+            return JsonResponse({"status": "error", "message": "Notebook ID missing"}, status=400)
+
+        for page_data in data["pages"]:
+            Page.objects.filter(id=page_data["id"], notebook_id=notebook_id).update(order=page_data["order"])
+
+        return JsonResponse({"status": "success"})
+    
+    return JsonResponse({"status": "error"}, status=400)
 
 def create_page(request, pk):
     notebook = Notebook.objects.get(id=pk)

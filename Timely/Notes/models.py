@@ -74,13 +74,23 @@ class Page(models.Model):
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     title:str = models.CharField(max_length=100)
     body:str = models.TextField()
-    is_favourite = models.BooleanField(default=False)
+    # is_favourite = models.BooleanField(default=False)
+    order = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
         return self.notebook.title + " " + self.title
+    
+    class Meta:
+        ordering = ['order']
+
+    def save(self, *args, **kwargs):
+        if self.order is None:  # Only assign order if not provided
+            last_page = self.notebook.pages.order_by('-order').first()
+            self.order = (last_page.order + 1) if last_page else 1  # Get next order for this notebook
+        super().save(*args, **kwargs)
     
     # def save(self, *args, **kwargs):
     #     if not self.updated_at:
