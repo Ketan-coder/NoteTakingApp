@@ -148,32 +148,54 @@ img{
     </div>
   </div>
 </nav>
-
+  <!-- Navbar end -->
+  <!-- Flash messages -->
 {% if messages %}
-    {% for message in messages %}
-        <!-- Success alert -->
-        
-        {% if message.tags == 'error' %}
-          
-        <div class="m-4">
-            <div class="alert alert-danger" role="alert">
-            <h5 class="alert-heading">{{message.tags}}</h5>
-            {{message}}
-          </div>
-        </div>
-        {% else %}
-         
-        <div class="m-4">
-            <div class="alert alert-{{message.tags}}" role="alert">
-            <h5 class="alert-heading">{{message.tags}}</h5>
-            {{message}}
-          </div>
-        </div> 
-        {% endif %}
-         
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        {% for message in messages %}
+            <div id="toast-{{ forloop.counter }}" 
+                 class="toast text-bg-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} border-0 shadow-none show"
+                 role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong class="me-2 text-capitalize">{{ message.tags }}:</strong> {{ message }}
+                    </div>
+                    <div class="me-2 m-auto">
+                        <button type="button" class="btn-close close-toast" data-toast-id="toast-{{ forloop.counter }}" aria-label="Close" data-bs-theme="dark"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 
-    {% endfor %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var toasts = document.querySelectorAll(".toast");
+
+            toasts.forEach(function (toastElement) {
+                // Auto-hide after 8 seconds (8000ms)
+                setTimeout(function () {
+                    toastElement.classList.remove("show");  // Hide the toast
+                    toastElement.classList.add("fade");  // Smooth fade effect
+                }, 8000);
+            });
+
+            // Manually close on button click
+            document.querySelectorAll(".close-toast").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var toastId = this.getAttribute("data-toast-id");
+                    var toastElement = document.getElementById(toastId);
+                    if (toastElement) {
+                        toastElement.classList.remove("show");
+                        toastElement.classList.add("fade");
+                    }
+                });
+            });
+        });
+    </script>
 {% endif %}
+
+
         
     {% block body %}
 	
