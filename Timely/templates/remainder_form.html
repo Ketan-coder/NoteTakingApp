@@ -48,21 +48,36 @@
                hx-trigger="change delay:500ms"
                hx-target="#save-status"
                {% endif %}>
+        {% comment %} <br>
+        <!-- Checkbox for Over -->
+        <label class="form-check-label m-2">
+            <input type="checkbox" name="is_over" {% if remainder.is_over %}checked{% endif %}
+                    {% if remainder %}
+                   hx-post="{% url 'autosave_reminder' remainder.id %}"
+                   hx-trigger="change delay:500ms"
+                   hx-target="#save-status"
+                   {% endif %}> Mark as Over
+        </label>
+        <br> {% endcomment %}
 
         <!-- Checkbox for Completed -->
         <label class="form-check-label m-2">
             <input type="checkbox" name="is_completed" {% if remainder.is_completed %}checked{% endif %}
+                    {% if remainder %}
                    hx-post="{% url 'autosave_reminder' remainder.id %}"
                    hx-trigger="change delay:500ms"
-                   hx-target="#save-status"> Mark as Completed
+                   hx-target="#save-status"
+                    {% endif %}> Mark as Completed
         </label>
         <br>
         <!-- Checkbox for Favourite -->
         <label class="form-check-label m-2">
             <input type="checkbox" name="is_favourite" {% if remainder.is_favourite %}checked{% endif %}
+                    {% if remainder %}
                    hx-post="{% url 'autosave_reminder' remainder.id %}"
                    hx-trigger="change delay:500ms"
-                   hx-target="#save-status"> Mark as Favourite
+                   hx-target="#save-status"
+                   {% endif %}> Mark as Favourite
         </label>
 
         <!-- Rich Text Editor for Body -->
