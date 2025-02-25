@@ -14,7 +14,7 @@ from django.contrib import messages
 # Create your models here.
 class Notebook(models.Model):
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     priority = models.IntegerField(default=0)
     # priority = models.CharField(choices=PRIORITY_LIST,default="Important",max_length=50)
     is_favourite = models.BooleanField(default=False)
@@ -73,14 +73,24 @@ class SharedNotebook(models.Model):
 class Page(models.Model):
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
-    is_favourite = models.BooleanField(default=False)
+    body:str = models.TextField()
+    # is_favourite = models.BooleanField(default=False)
+    order = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
         return self.notebook.title + " " + self.title
+    
+    class Meta:
+        ordering = ['order']
+
+    def save(self, *args, **kwargs):
+        if self.order is None:  # Only assign order if not provided
+            last_page = self.notebook.pages.order_by('-order').first()
+            self.order = (last_page.order + 1) if last_page else 1  # Get next order for this notebook
+        super().save(*args, **kwargs)
     
     # def save(self, *args, **kwargs):
     #     if not self.updated_at:
@@ -91,7 +101,7 @@ class SubPage(models.Model):
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
@@ -106,7 +116,7 @@ class SubPage(models.Model):
     
 class Remainder(models.Model):
     title:str = models.CharField(max_length=100)
-    body:str = RichTextField()
+    body:str = models.TextField()
     alert_time = models.DateTimeField()
     is_over = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
@@ -118,13 +128,23 @@ class Remainder(models.Model):
     def __str__(self) -> str:
         return self.title
     
+    # def save(self, *args, **kwargs):
+    #     # if not self.updated_at:
+    #     #     self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
+    #     if self.alert_time < timezone.now() + datetime.timedelta(hours=5, minutes=30):
+    #         self.is_over = True
+    #     else:
+    #         self.is_over = False
+    #     super().save(*args, **kwargs)
     def save(self, *args, **kwargs):
-        # if not self.updated_at:
-        #     self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-        if self.alert_time < timezone.now() + datetime.timedelta(hours=5, minutes=30):
-            self.is_over = True
-        else:
-            self.is_over = False
+        if self.alert_time and timezone.is_naive(self.alert_time):
+            self.alert_time = timezone.make_aware(self.alert_time, timezone.get_current_timezone())
+
+        # Ensure timezone-aware comparison
+        now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
+        
+        self.is_over = self.alert_time < now_with_offset
+        
         super().save(*args, **kwargs)
     
 class StickyNotes(models.Model):

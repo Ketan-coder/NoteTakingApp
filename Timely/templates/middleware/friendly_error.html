@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %} Oops! Something Went Wrong {% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="card p-4 text-center shadow-lg">
+        <h2 class="text-danger">Oops! Something Went Wrong</h2>
+        <p class="lead">We’re working on fixing this issue. Please try again later.</p>
+
+        <!-- Custom Error Code Display -->
+        <div class="mt-3">
+            <p class="text-warning">Error Code: 
+                {% if "SyntaxError" in traceback %} 📝 420
+                {% elif "NoReverseMatch" in exception or "Reverse" in exception %} 🚦 430
+                {% elif "ValueError" in exception %} 🔢 440
+                {% elif "KeyError" in exception %} 🔑 450
+                {% elif "IndexError" in exception %} 🔢 460
+                {% elif "AttributeError" in exception %} 🏷️ 470
+                {% elif "TypeError" in exception %} 🔣 480
+                {% elif "ImportError" in exception or "ModuleNotFoundError" in exception %} 📦 490
+                {% elif "PermissionError" in exception %} 🔐 500
+                {% elif "FileNotFoundError" in exception %} 📁 510
+                {% elif "TimeoutError" in exception %} ⏳ 520
+                {% else %} ❌ 599
+                {% endif %}
+            </p>
+        </div>
+
+        <button class="btn btn-primary mt-3" onclick="window.location.href='/'">Return Home</button>
+
+        <!-- Hidden Debug Section for Developers -->
+        <div class="mt-4 text-start">
+            <button class="btn btn-warning" onclick="document.getElementById('debug-info').style.display='block'">
+                Show Debug Info (Developers Only)
+            </button>
+            <div id="debug-info" class="mt-3 p-3 bg-dark text-white rounded" style="display: none;">
+                <h4>Exception:</h4>
+                <pre>{{ exception }}</pre>
+
+                <h4>Request Path:</h4>
+                <pre>{{ path }}</pre>
+
+                <h4>Method:</h4>
+                <pre>{{ method }}</pre>
+
+                <h4>Traceback:</h4>
+                <pre>{{ traceback }}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

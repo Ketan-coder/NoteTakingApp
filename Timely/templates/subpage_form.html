@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Timely | {% if subpage %} Update {% else %} Create {% endif %} SubPage
+{% endblock title %}
+
+{% block body %}
+
+<div class="container mt-4">
+    <!-- Save Status Bar -->
+    {% if subpage %}<p id="save-status" class="mt-2 text-muted right"></p>{% endif %}
+        <form method="post" 
+      {% if subpage %} 
+              hx-post="{% url 'update_sub_page' subpage_pk=subpage.id %}" 
+    {% else %} 
+              hx-post="{% url 'create_subpage' notebook_pk=notebook.id page_pk=page.id %}" 
+    {% endif %}
+      {% if subpage %} hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}
+      class="notebook-form" hx-push-url="false">
+
+        {% csrf_token %}
+
+        <!-- Submit Button (Only for Create Mode) -->
+        {% if not subpage %}
+            <button type="submit" class="btn btn-primary mt-3 mb-3">Create Sub Page</button>
+        {% endif %}
+
+        <!-- Title Input -->
+        <input type="text" id="id_title" name="title" class="form-control notebook-title" required
+               placeholder="Untitled" value="{{ subpage.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
+               {% if subpage %} hx-post="{% url 'autosave_subpage' subpage.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+        
+
+        <!-- Rich Text Editor -->
+        <div id="editor-container" class="border rounded"></div>
+        
+        <!-- Hidden Input for Saving -->
+        <textarea id="id_body" name="body" class="d-none" required
+                  {% if subpage %}hx-post="{% url 'autosave_subpage' subpage.id %}"
+                  hx-trigger="change delay:500ms"
+                  hx-target="#save-status"{% endif %}>
+            {{ subpage.body|default_if_none:'' }}
+        </textarea>  
+
+        
+
+        
+    </form>
+</div>
+
+{% block script %}
+<!-- Quill.js for Rich Text Editing -->
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+    // document.getElementById('id_is_password_protected').addEventListener('change', function() {
+    //     document.getElementById('group-password').style.display = this.checked ? 'block' : 'none';
+    // });
+
+    // Show "Saving..." and "Saved" status messages
+    // document.querySelectorAll("input, textarea").forEach(input => {
+    //     input.addEventListener("input", function() {
+    //         const saveStatus = document.getElementById("save-status");
+    //         saveStatus.textContent = "Saving...";
+    //         setTimeout(() => {
+    //             saveStatus.textContent = "Saved";
+    //         }, 1000); // Delay to show "Saved" after typing stops
+    //     });
+    // });
+    document.querySelectorAll("input, textarea").forEach(input => {
+        input.addEventListener("input", function() {
+            let saveStatus = document.getElementById("save-status");
+            if (saveStatus) {
+                saveStatus.textContent = "Saving...";
+                setTimeout(() => {
+                    saveStatus.textContent = "Saved";
+                }, 1000);
+            } else {
+                console.warn("Warning: #save-status not found in the DOM");
+            }
+        });
+    });
+
+    // Initialize Quill.js Editor
+    if (!window.quill) {
+        window.quill = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: 'Write something...',
+            // ContentVisibilityAutoStateChangeEvent: true,
+            modules: {
+                toolbar: [
+                    // Headings & Font
+                    [{ 'header': [1, 2, 3, false] }],
+                    [{ 'font': ['roboto', 'lora', 'poppins', 'serif', 'monospace'] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+
+                    // Text Formatting
+                    ['bold', 'italic', 'underline', 'strike'],
+
+                    // Superscript / Subscript
+                    [{ 'script': 'sub' }, { 'script': 'super' }],
+
+                    // Lists & Indentation
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'indent': '-1' }, { 'indent': '+1' }],
+
+                    // Text Alignment
+                    [{ 'align': [] }],
+
+                    // Colors
+                    [{ 'color': [] }, { 'background': [] }],
+
+                    // Links & Media
+                    ['link'],
+
+                    // Block Quote & Code
+                    ['blockquote', 'code-block'],
+
+                    // Clear Formatting
+                    ['clean']
+                ]
+            }
+        }
+    );
+
+    // Load saved content into Quill editor (if updating)
+    document.addEventListener("DOMContentLoaded", function () {
+        var bodyContent = document.getElementById("id_body").value;
+        quill.root.innerHTML = bodyContent;
+
+        function resizeEditor() {
+            const height = window.innerHeight - editorContainer.getBoundingClientRect().top - 20;
+            editorContainer.style.height = height + "px";
+        }
+
+        resizeEditor();
+        window.addEventListener("resize", resizeEditor);
+    });
+
+    // Sync Quill Content to the Hidden Textarea
+    quill.on('text-change', function() {
+        let quillContent = quill.root.innerHTML;
+        let textarea = document.getElementById("id_body");
+
+        textarea.value = quillContent; // Sync content
+        textarea.dispatchEvent(new Event("change")); // Trigger HTMX autosave
+    });
+}
+// document.body.addEventListener("htmx:afterRequest", function(event) {
+//     if (event.detail.xhr.responseText.includes('"message": "Saved!"')) {
+//         let saveStatus = document.getElementById("save-status");
+//         if (saveStatus) {
+//             saveStatus.textContent = "Saved!";
+//             saveStatus.classList.remove("hidden");
+//             setTimeout(() => saveStatus.classList.add("hidden"), 2000);
+//         }
+//     }
+// });
+document.body.addEventListener("htmx:afterRequest", function(event) {
+    let response = event.detail.xhr.responseText;
+    try {
+        let data = JSON.parse(response);
+        if (data.redirect) {
+            window.location.href = data.redirect; // Manually update the URL
+        }
+    } catch (e) {
+        console.error("Invalid JSON response", e);
+    }
+});
+
+</script>
+{% endblock script %}
+
+<style>
+    html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    }
+
+    .container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #editor-container {
+        flex: 1;
+        height: calc(100vh - 150px); /* Adjust 150px based on header, padding, etc. */
+        min-height: 500px; /* Fallback height */
+        border-radius: 0;
+    }
+
+    .ql-container {
+        height: 100%;
+    }
+
+    .ql-editor {
+        min-height: 100%;
+        white-space: normal !important;
+        border-radius: 0;
+    }
+
+    .ql-toolbar, .ql-snow {
+        border: 1px solid transparent !important;
+    }
+
+    /* Force inputs to blend into background */
+    .custom-input {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: white !important;
+        font-size: 1.5rem !important;
+        width: 100% !important;
+        padding: 8px 0 !important;
+        font-weight: bold !important;
+    }
+
+    /* Optional: Make placeholder text subtle */
+    .custom-input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* Remove focus outline */
+    .custom-input:focus {
+        outline: none !important;
+    }
+
+    /* notebook-style Title */
+    .notebook-title {
+        font-size: 32px;
+        font-weight: bold;
+        border: none;
+        outline: none;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* .notebook-title:hover, .notebook-title:focus{
+        border-bottom: 1px solid black;
+    } */
+
+    /* notebook-style Body */
+    .notebook-body {
+        border: none;
+        outline: none;
+        min-height: 300px;
+        width: 100%;
+        resize: none;
+        font-size: 18px;
+    }
+
+    /* Remove input borders */
+    .form-control {
+        border: none;
+        outline: none;
+    }
+</style>
+{% endblock body %}

@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Timely | {% if remainder %} Update {% else %} Create {% endif %} Reminder
+{% endblock %}
+
+{% block body %}
+
+<div class="container mt-4">
+    <!-- Save Status Indicator -->
+    {% if remainder %} <p id="save-status" class="mt-2 text-muted text-start"></p> {% endif %}
+
+    <form method="post"
+          {% if remainder %}
+              hx-post="{% url 'update_reminder' remainder_pk=remainder.id %}"
+          {% else %}
+              hx-post="{% url 'create_remainder' %}"
+          {% endif %}
+          hx-trigger="keyup changed delay:500ms"
+          hx-target="#save-status"
+          class="notebook-form"
+          hx-push-url="false">
+
+        {% csrf_token %}
+
+        <!-- Submit Button (Only for Create Mode) -->
+        {% if not remainder %}
+            <button type="submit" class="btn btn-primary mt-3 mb-3">Create Reminder</button>
+        {% endif %}
+
+        <!-- Title Input -->
+        <input type="text" id="id_title" name="title" class="form-control notebook-title"
+               placeholder="Reminder Title..." required
+               value="{{ remainder.title|default_if_none:'' }}"
+               style="background: none; border: none; color: white; font-size: 1.8rem; font-weight: bold; width: 100%;"
+               {% if remainder %}
+               hx-post="{% url 'autosave_reminder' remainder.id %}"
+               hx-trigger="keyup changed delay:500ms"
+               hx-target="#save-status"
+               {% endif %}>
+
+        <!-- Due Date Input -->
+        <input type="datetime-local" id="id_alert_time" name="alert_time" class="form-control mt-2"
+               value="{{ remainder.alert_time|date:'Y-m-d\TH:i' }}"
+               style="background: none; border: none; color: white; width: 100%; font-size: 1rem;"
+               {% if remainder %}
+               hx-post="{% url 'autosave_reminder' remainder.id %}"
+               hx-trigger="change delay:500ms"
+               hx-target="#save-status"
+               {% endif %}>
+        {% comment %} <br>
+        <!-- Checkbox for Over -->
+        <label class="form-check-label m-2">
+            <input type="checkbox" name="is_over" {% if remainder.is_over %}checked{% endif %}
+                    {% if remainder %}
+                   hx-post="{% url 'autosave_reminder' remainder.id %}"
+                   hx-trigger="change delay:500ms"
+                   hx-target="#save-status"
+                   {% endif %}> Mark as Over
+        </label>
+        <br> {% endcomment %}
+
+        <!-- Checkbox for Completed -->
+        <label class="form-check-label m-2">
+            <input type="checkbox" name="is_completed" {% if remainder.is_completed %}checked{% endif %}
+                    {% if remainder %}
+                   hx-post="{% url 'autosave_reminder' remainder.id %}"
+                   hx-trigger="change delay:500ms"
+                   hx-target="#save-status"
+                    {% endif %}> Mark as Completed
+        </label>
+        <br>
+        <!-- Checkbox for Favourite -->
+        <label class="form-check-label m-2">
+            <input type="checkbox" name="is_favourite" {% if remainder.is_favourite %}checked{% endif %}
+                    {% if remainder %}
+                   hx-post="{% url 'autosave_reminder' remainder.id %}"
+                   hx-trigger="change delay:500ms"
+                   hx-target="#save-status"
+                   {% endif %}> Mark as Favourite
+        </label>
+
+        <!-- Rich Text Editor for Body -->
+        <div id="editor-container" class="border rounded mt-3"></div>
+
+        <!-- Hidden Input for Storing Quill Content -->
+        <textarea id="id_body" name="body" class="d-none" required
+                  {% if remainder %}
+                  hx-post="{% url 'autosave_reminder' remainder.id %}"
+                  hx-trigger="change delay:500ms"
+                  hx-target="#save-status"
+                  {% endif %}>
+            {{ remainder.body|default_if_none:'' }}
+        </textarea>
+    </form>
+</div>
+
+{% block script %}
+<!-- Quill.js for Rich Text Editing -->
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let dueDateInput = document.getElementById("id_alert_time");
+
+        function setMinAndDefaultDate() {
+            let now = new Date();
+
+            // Set min date (today's date)
+            let minYear = now.getFullYear();
+            let minMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+            let minDay = now.getDate().toString().padStart(2, '0');
+            let minHours = now.getHours().toString().padStart(2, '0');
+            let minMinutes = now.getMinutes().toString().padStart(2, '0');
+
+            let minDateTime = `${minYear}-${minMonth}-${minDay}T${minHours}:${minMinutes}`;
+            dueDateInput.setAttribute("min", minDateTime);
+
+            // Set default date (day after tomorrow at 11:00 AM)
+            let defaultDate = new Date();
+            defaultDate.setDate(now.getDate() + 2); // Move to day after tomorrow
+            defaultDate.setHours(11, 0, 0, 0); // Set time to 11:00 AM
+
+            let defaultYear = defaultDate.getFullYear();
+            let defaultMonth = (defaultDate.getMonth() + 1).toString().padStart(2, '0');
+            let defaultDay = defaultDate.getDate().toString().padStart(2, '0');
+            let defaultHours = defaultDate.getHours().toString().padStart(2, '0');
+            let defaultMinutes = defaultDate.getMinutes().toString().padStart(2, '0');
+
+            let defaultDateTime = `${defaultYear}-${defaultMonth}-${defaultDay}T${defaultHours}:${defaultMinutes}`;
+
+            // Only set default value if no value is already set
+            if (!dueDateInput.value) {
+                dueDateInput.value = defaultDateTime;
+            }
+        }
+
+        // Prevent selecting past dates
+        dueDateInput.addEventListener("input", function () {
+            if (dueDateInput.value < dueDateInput.min) {
+                alert("You cannot select a past date or time!");
+                dueDateInput.value = dueDateInput.min;
+            }
+        });
+
+        setMinAndDefaultDate(); // Run function on page load
+    });
+</script>
+
+<script>
+    // Show "Saving..." and "Saved" status messages
+    document.querySelectorAll("input, textarea").forEach(input => {
+        input.addEventListener("input", function () {
+            let saveStatus = document.getElementById("save-status");
+            if (saveStatus) {
+                saveStatus.textContent = "Saving...";
+                setTimeout(() => {
+                    saveStatus.textContent = "Saved";
+                }, 1000);
+            } else {
+                console.warn("Warning: #save-status not found in the DOM");
+            }
+        });
+    });
+
+    // Initialize Quill.js Editor
+   // Initialize Quill.js Editor
+    if (!window.quill) {
+        window.quill = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: 'Write something...',
+            ContentVisibilityAutoStateChangeEvent: true,
+            modules: {
+                toolbar: [
+                    // Headings & Font
+                    [{ 'header': [1, 2, 3, false] }],
+                    [{ 'font': ['roboto', 'lora', 'poppins', 'serif', 'monospace'] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+
+                    // Text Formatting
+                    ['bold', 'italic', 'underline', 'strike'],
+
+                    // Superscript / Subscript
+                    [{ 'script': 'sub' }, { 'script': 'super' }],
+
+                    // Lists & Indentation
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'indent': '-1' }, { 'indent': '+1' }],
+
+                    // Text Alignment
+                    [{ 'align': [] }],
+
+                    // Colors
+                    [{ 'color': [] }, { 'background': [] }],
+
+                    // Links & Media
+                    ['link'],
+
+                    // Block Quote & Code
+                    ['blockquote', 'code-block'],
+
+                    // Clear Formatting
+                    ['clean']
+                ]
+            }
+        }
+    );
+
+    // Load saved content into Quill editor (if updating)
+    document.addEventListener("DOMContentLoaded", function () {
+        var bodyContent = document.getElementById("id_body").value;
+        quill.root.innerHTML = bodyContent;
+
+        function resizeEditor() {
+            const height = window.innerHeight - editorContainer.getBoundingClientRect().top - 20;
+            editorContainer.style.height = height + "px";
+        }
+
+        resizeEditor();
+        window.addEventListener("resize", resizeEditor);
+    });
+
+    // Sync Quill Content to the Hidden Textarea
+    quill.on('text-change', function() {
+        let quillContent = quill.root.innerHTML;
+        let textarea = document.getElementById("id_body");
+
+        textarea.value = quillContent; // Sync content
+        textarea.dispatchEvent(new Event("change")); // Trigger HTMX autosave
+    });
+}
+    // Handle HTMX responses for autosave
+    document.body.addEventListener("htmx:afterRequest", function(event) {
+    let responseText = event.detail.xhr.responseText.trim(); // Remove whitespace
+
+    let saveStatus = document.getElementById("save-status");
+    if (saveStatus) {
+        if (responseText === "Saved") {
+            saveStatus.textContent = "Saved";
+        }
+    }
+});
+
+</script>
+{% endblock script %}
+
+<style>
+    html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    }
+
+    .container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #editor-container {
+        flex: 1;
+        height: calc(100vh - 150px); /* Adjust 150px based on header, padding, etc. */
+        min-height: 500px; /* Fallback height */
+        border-radius: 0;
+    }
+
+    .ql-container {
+        height: 100%;
+    }
+
+    .ql-editor {
+        min-height: 100%;
+        white-space: normal !important;
+        border-radius: 0;
+    }
+
+    .ql-toolbar, .ql-snow {
+        border: 1px solid transparent !important;
+    }
+
+    /* Force inputs to blend into background */
+    .custom-input {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: white !important;
+        font-size: 1.5rem !important;
+        width: 100% !important;
+        padding: 8px 0 !important;
+        font-weight: bold !important;
+    }
+
+    /* Optional: Make placeholder text subtle */
+    .custom-input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* Remove focus outline */
+    .custom-input:focus {
+        outline: none !important;
+    }
+
+    /* notebook-style Title */
+    .notebook-title {
+        font-size: 32px;
+        font-weight: bold;
+        border: none;
+        outline: none;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* .notebook-title:hover, .notebook-title:focus{
+        border-bottom: 1px solid black;
+    } */
+
+    /* notebook-style Body */
+    .notebook-body {
+        border: none;
+        outline: none;
+        min-height: 300px;
+        width: 100%;
+        resize: none;
+        font-size: 18px;
+    }
+
+    /* Remove input borders */
+    .form-control {
+        border: none;
+        outline: none;
+    }
+</style>
+
+{% endblock %}

@@ -97,6 +97,12 @@ img{
 	{% comment %} <script src="https://kit.fontawesome.com/2058ad717c.js" crossorigin="anonymous"></script> {% endcomment %}
     <link href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css" rel="stylesheet" integrity="sha256-SsJizWSIG9JT9Qxbiy8xnYJfjCAkhEQ0hihxRn7jt2M=" crossorigin="anonymous">
     <link href="{% static 'vendors/css/halfmoon.css' %}" rel="stylesheet" >
+    <script src="{% static 'vendors/js/htmx.min.js' %}" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    {% comment %} <link href="https://fonts.googleapis.com/css?family=Roboto|Lora|Poppins" rel="stylesheet"> {% endcomment %}
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@100;300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;700;900&display=swap" rel="stylesheet">
 	{% block head %}
 	
 	{% endblock head %}
@@ -105,7 +111,7 @@ img{
 	<!-- Navbar nav scrolling -->
 <nav class="navbar navbar-expand-lg" style="background-color: var(--bs-content-bg); border-bottom: var(--bs-border-width) solid var(--bs-content-border-color);">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#" style="font-weight: 800;">
+    <a class="navbar-brand" href="{% url 'home' %}" style="font-weight: 800;">
       {% comment %} <img src="..." alt="Logo" width="24" height="24" class="d-inline-block align-text-top"> {% endcomment %}
       Timely
     </a>
@@ -143,32 +149,54 @@ img{
     </div>
   </div>
 </nav>
-
+  <!-- Navbar end -->
+  <!-- Flash messages -->
 {% if messages %}
-    {% for message in messages %}
-        <!-- Success alert -->
-        
-        {% if message.tags == 'error' %}
-          
-        <div class="m-4">
-            <div class="alert alert-danger" role="alert">
-            <h5 class="alert-heading">{{message.tags}}</h5>
-            {{message}}
-          </div>
-        </div>
-        {% else %}
-         
-        <div class="m-4">
-            <div class="alert alert-{{message.tags}}" role="alert">
-            <h5 class="alert-heading">{{message.tags}}</h5>
-            {{message}}
-          </div>
-        </div> 
-        {% endif %}
-         
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        {% for message in messages %}
+            <div id="toast-{{ forloop.counter }}" 
+                 class="toast text-bg-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} border-0 shadow-none show"
+                 role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong class="me-2 text-capitalize">{{ message.tags }}:</strong> {{ message }}
+                    </div>
+                    <div class="me-2 m-auto">
+                        <button type="button" class="btn-close close-toast" data-toast-id="toast-{{ forloop.counter }}" aria-label="Close" data-bs-theme="dark"></button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 
-    {% endfor %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var toasts = document.querySelectorAll(".toast");
+
+            toasts.forEach(function (toastElement) {
+                // Auto-hide after 8 seconds (8000ms)
+                setTimeout(function () {
+                    toastElement.classList.remove("show");  // Hide the toast
+                    toastElement.classList.add("fade");  // Smooth fade effect
+                }, 8000);
+            });
+
+            // Manually close on button click
+            document.querySelectorAll(".close-toast").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var toastId = this.getAttribute("data-toast-id");
+                    var toastElement = document.getElementById(toastId);
+                    if (toastElement) {
+                        toastElement.classList.remove("show");
+                        toastElement.classList.add("fade");
+                    }
+                });
+            });
+        });
+    </script>
 {% endif %}
+
+
         
     {% block body %}
 	
@@ -187,8 +215,6 @@ img{
       popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl)
       );
     </script>
-    <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
-<script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
 	{% block script %}{% endblock script %}
     <!-- Option 2: Separate Popper and Bootstrap JS
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>

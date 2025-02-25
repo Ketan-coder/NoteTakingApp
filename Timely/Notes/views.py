@@ -1,8 +1,9 @@
 import datetime
 import json
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from Notes.utils import render_to_pdf
 from .models import Activity, Notebook, Page, StickyNotes, Remainder, SharedNotebook, SubPage
 from .forms import NotebookForm, PageForm, StickyNotesForm,RemainderForm,SubPageForm
@@ -18,79 +19,117 @@ from django.conf import settings
 from .models import Notebook, Page, SubPage
 import json
 import os
-
+from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 # Uncomment when done with lock
-# from django.views.decorators.cache import cache_page
-# from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 # # Create your views here.
-# @cache_page(60 * 2)  # Cache the page for 2 minutes (adjust as needed)
+# Cache duration (in seconds)
+# CACHE_TIMEOUT = 120  # 2 minutes
+
+# @login_required
 # def index(request):
 #     if request.user.is_authenticated:
+#         start_time = datetime.datetime.now()
+
 #         logined_profile = Profile.objects.get(user=request.user)
 
-#         # Cache invalidation for notebooks_list
+#         # Cache Key Definitions
 #         notebooks_cache_key = f'notebooks_list_{request.user.id}'
+#         pages_cache_key = f'pages_{request.user.id}'
+#         subpages_cache_key = f'subpages_{request.user.id}'
+
+#         # Fetch Notebooks (Use Cache)
 #         notebooks_list = cache.get(notebooks_cache_key)
-#         if not notebooks_list:
-#             notebooks_list = Notebook.objects.filter(author=logined_profile).order_by('priority')
-#             cache.set(notebooks_cache_key, notebooks_list, 60 * 2)  # Cache for 1 minutes
+#         if notebooks_list is None:  # Check for None, not empty list
+#             notebooks_list = Notebook.objects.filter(author=logined_profile).only(
+#                 'id', 'title', 'is_accessed_recently', 'priority', 'is_favourite',
+#                 'is_shared', 'is_password_protected', 'is_password_entered', 'password',
+#                 'author', 'created_at', 'updated_at'
+#             ).defer('body').order_by('-is_accessed_recently')
+#             cache.set(notebooks_cache_key, notebooks_list, CACHE_TIMEOUT)
 #             print('Notebooks list cached successfully.')
 
-#         # Cache invalidation for pages
-#         pages_cache_key = f'pages_{request.user.id}'
+#         notebooks_list_priority = notebooks_list.order_by('priority')
+
+#         # Fetch Pages (Use Cache)
 #         pages = cache.get(pages_cache_key)
 #         if not pages:
-#             pages = Page.objects.filter(notebook__in=notebooks_list)
-#             cache.set(pages_cache_key, pages, 60 * 2)  # Cache for 1 minutes
+#             pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-updated_at')
+#             cache.set(pages_cache_key, list(pages), CACHE_TIMEOUT)
 #             print('Pages cached successfully.')
 
-#         # Repeat this caching pattern for other queries as needed
-#         subpages = SubPage.objects.filter(page__in=pages)
+#         # Fetch SubPages (Use Cache)
+#         subpages = cache.get(subpages_cache_key)
+#         if not subpages:
+#             subpages = SubPage.objects.filter(page__in=pages)
+#             cache.set(subpages_cache_key, list(subpages), CACHE_TIMEOUT)
+#             print('SubPages cached successfully.')
+
+#         # Real-time Queries (No Caching)
 #         activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
 #         sticky_notes = StickyNotes.objects.filter(author=logined_profile)
 #         remainders = Remainder.objects.filter(author=logined_profile).order_by('alert_time')
+
+#         # Favorites
 #         favouritesNotebooks = notebooks_list.filter(is_favourite=True)
 #         favouritesPages = Page.objects.filter(is_favourite=True, notebook__in=favouritesNotebooks)
 #         favouritesRemainders = remainders.filter(is_favourite=True)
+
+#         # Shared Notebooks
 #         sharedNotebooks = SharedNotebook.objects.filter(owner=logined_profile).order_by('-shared_at')
 
-#         # Set up pagination for activities
-#         paginator_activities = Paginator(activities_list, 5)  # Show 5 activities per page
+#         # Pagination Setup
+#         paginator_activities = Paginator(activities_list, 5)
 #         page_number_activities = request.GET.get('page')
 #         activities = paginator_activities.get_page(page_number_activities)
 
-#         # Set up pagination for notebooks
-#         paginator_notebooks = Paginator(notebooks_list, 5)  # Show 5 notebooks per page
+#         paginator_notebooks = Paginator(notebooks_list, 5)
 #         page_number_notebooks = request.GET.get('notebook_page')
 #         notebooks = paginator_notebooks.get_page(page_number_notebooks)
-#         check_remainders()
-#         check_activities()
-#         mark_password_as_not_entered(notebooks_list)
 
-#         context = {'notebooks': notebooks, 'pages': pages, 'logined_profile': logined_profile,
-#                    'activities': activities, 'sticky_notes': sticky_notes, 'subpages': subpages,
-#                    'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks,
-#                    'favouritesPages': favouritesPages, 'favouritesRemainders': favouritesRemainders,
-#                    'sharedNotebooks': sharedNotebooks}
+#         # Background Updates
+#         check_remainders()
+#         mark_password_as_not_entered(notebooks_list)
+#         mark_recently_accessed_as_false(pages, notebooks_list)
+
+#         end_time = datetime.datetime.now()
+#         print(f"Time taken: {end_time - start_time}")
+
+#         context = {
+#             'notebooks': notebooks, 'notebooks_list_priority': notebooks_list_priority,
+#             'logined_profile': logined_profile, 'activities': activities, 'sticky_notes': sticky_notes,
+#             "pages": pages, "subpages": subpages, 'remainders': remainders,
+#             'favouritesNotebooks': favouritesNotebooks, 'favouritesPages': favouritesPages,
+#             'favouritesRemainders': favouritesRemainders, 'sharedNotebooks': sharedNotebooks
+#         }
 
 #         return render(request, "index.html", context)
 #     else:
 #         return redirect('login')
+
+
 # Create your views here.
 def index(request):
     if request.user.is_authenticated:
         start_time = datetime.datetime.now()
 
         logined_profile = Profile.objects.get(user=request.user)
-        notebooks_list = Notebook.objects.filter(author=logined_profile).order_by('-is_accessed_recently')
-        notebooks_list_priority = Notebook.objects.filter(author=logined_profile).order_by('priority')
-        pages = Page.objects.filter(notebook__in=notebooks_list)
+        notebooks_list = Notebook.objects.filter(author=logined_profile).only(
+            'id', 'title', 'is_accessed_recently', 'priority', 'is_favourite',
+            'is_shared', 'is_password_protected', 'is_password_entered', 'password',
+            'author', 'created_at', 'updated_at'
+            ).defer('body').order_by('-is_accessed_recently')
+
+        notebooks_list_priority = notebooks_list.order_by('priority')
+        pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-order')
         subpages = SubPage.objects.filter(page__in=pages)
         activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
         sticky_notes = StickyNotes.objects.filter(author=logined_profile)
         remainders = Remainder.objects.filter(author=logined_profile).order_by('alert_time')
         favouritesNotebooks = notebooks_list.filter(is_favourite=True)
-        favouritesPages = Page.objects.filter(is_favourite=True, notebook__in=favouritesNotebooks)
+        favouritesPages = Page.objects.filter(notebook__in=favouritesNotebooks)
         favouritesRemainders = remainders.filter(is_favourite=True)
         sharedNotebooks = SharedNotebook.objects.filter(owner=logined_profile).order_by('-shared_at')
         
@@ -109,14 +148,44 @@ def index(request):
         end_time = datetime.datetime.now()
 
         print(f"Time taken: {end_time - start_time}")
-        context = {'notebooks': notebooks,'notebooks_list_priority': notebooks_list_priority, 'pages': pages, 'logined_profile': logined_profile,
-                   'activities': activities, 'sticky_notes': sticky_notes, 'subpages': subpages,
+        context = {'notebooks': notebooks,'notebooks_list_priority': notebooks_list_priority, 'logined_profile': logined_profile,
+                   'activities': activities, 'sticky_notes': sticky_notes, "pages": pages,"subpages": subpages,
                    'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks, 
                    'favouritesPages': favouritesPages, 'favouritesRemainders': favouritesRemainders,'sharedNotebooks': sharedNotebooks}
     else:
         context = {}
         redirect('login')
     return render(request, "index.html", context)
+
+# def fetch_notebook_contents(request, notebook_id, page_id=None, subpage_id=None):
+#     """Fetch the body content of a notebook, page, or subpage dynamically for HTMX."""
+    
+#     if subpage_id:
+#         content = get_object_or_404(SubPage, id=subpage_id).body
+#     elif page_id:
+#         content = get_object_or_404(Page, id=page_id).body
+#     else:
+#         notebook = get_object_or_404(Notebook, id=notebook_id, author=request.user.profile)
+#         content = notebook.body  # Ensure we fetch the correct body
+
+#     return render(request, "components/notebook_body.html", {"body": content})
+
+def fetch_notebook_contents(request, notebook_id=None, page_id=None, subpage_id=None):
+    """Fetch the body content of a notebook, page, or subpage dynamically for HTMX as JSON."""
+    
+    content = None  # Default empty content
+
+    if subpage_id:
+        content = get_object_or_404(SubPage, id=subpage_id).body
+    elif page_id:
+        content = get_object_or_404(Page, id=page_id).body
+    elif notebook_id:
+        notebook = get_object_or_404(Notebook, id=notebook_id, author=request.user.profile)
+        content = notebook.body  # Ensure we fetch the correct body
+    else:
+        return JsonResponse({"error": "Invalid request"},status=400)
+
+    return JsonResponse({"body": content})
     
 def mark_password_as_not_entered(notebook_list):
     for notebook in notebook_list:
@@ -126,18 +195,29 @@ def mark_password_as_not_entered(notebook_list):
         else:
             pass
 
-def mark_recently_accessed_as_false(page_list,notebooks):
-    recently_accessed_notebook = []
-    for notebook in notebooks:
-        if notebook.is_accessed_recently == True:
-            recently_accessed_notebook.append(notebook)
+# def mark_recently_accessed_as_false(page_list,notebooks):
+#     recently_accessed_notebook = []
+#     for notebook in notebooks:
+#         if notebook.is_accessed_recently == True:
+#             recently_accessed_notebook.append(notebook)
 
-    if len(recently_accessed_notebook) >= 3:
-        for page in recently_accessed_notebook.page_set.all():
-            if page.updated_at < timezone.now() + datetime.timedelta(hours=6, minutes=30):
-                related_notebook = Notebook.objects.get(id=page.notebook_id)
-                related_notebook.is_accessed_recently = False
-                related_notebook.save()
+#     if len(recently_accessed_notebook) >= 3:
+#         for page in recently_accessed_notebook.page_set.all():
+#             if page.updated_at < timezone.now() + datetime.timedelta(hours=6, minutes=30):
+#                 related_notebook = Notebook.objects.get(id=page.notebook_id)
+#                 related_notebook.is_accessed_recently = False
+#                 related_notebook.save()
+def mark_recently_accessed_as_false(page_list, notebooks):
+    recently_accessed_notebooks = [notebook for notebook in notebooks if notebook.is_accessed_recently]
+
+    if len(recently_accessed_notebooks) >= 3:
+        for notebook in recently_accessed_notebooks:  # Iterate over each notebook
+            for page in notebook.page_set.all():  # Access `page_set` for each notebook
+                if page.updated_at < timezone.now() + datetime.timedelta(hours=6, minutes=30):
+                    related_notebook = Notebook.objects.get(id=page.notebook_id)
+                    related_notebook.is_accessed_recently = False
+                    related_notebook.save()
+
 
 def check_activities():
     for activity in Activity.objects.all():
@@ -214,43 +294,6 @@ def update_reminder(request, pk):
         form = RemainderForm(instance=reminder)
     return render(request, 'update_reminder.html', {'form': form, 'reminder': reminder})
 
-# def exportNotebookToJson(request, pk):
-#     # Get the Notebook object or return 404 if not found
-#     notebook = get_object_or_404(Notebook, id=pk)
-    
-#     # Collect pages related to the notebook
-#     pages = Page.objects.filter(notebook=notebook)
-    
-#     # Collect subpages for each page
-#     subpages = SubPage.objects.filter(page__in=pages)
-    
-#     # Serialize the notebook, pages, and subpages
-#     notebook_data = serialize('json', [notebook], indent=4)
-#     pages_data = serialize('json', pages, indent=4)
-#     subpages_data = serialize('json', subpages, indent=4)
-    
-#     # Combine all serialized data into one dictionary
-#     complete_data = {
-#         'notebook': json.loads(notebook_data),
-#         'pages': json.loads(pages_data),
-#         'subpages': json.loads(subpages_data)
-#     }
-    
-#     # Ensure the directory exists
-#     json_directory = os.path.join(settings.BASE_DIR, 'JSONFiles')
-#     os.makedirs(json_directory, exist_ok=True)
-    
-#     # Define file path
-#     file_path = os.path.join(json_directory, f'{notebook.title.replace("/", "-")}.json')  # Avoiding directory traversal issues
-    
-#     # Write the JSON data to a file
-#     with open(file_path, 'w') as file:
-#         json.dump(complete_data, file, indent=4)
-    
-#     messages.success(request, 'Notebook exported successfully!')
-
-#     # Redirect to home page
-#     return redirect('home')
 
 def exportNotebookToJson(request, pk):
     # Get the Notebook object or return 404 if not found
@@ -289,105 +332,126 @@ def exportNotebookToJson(request, pk):
 @login_required
 def loadJsonToModels(request):
     if request.method == 'POST':
-        # Assuming the JSON file is uploaded via a form
         json_file = request.FILES.get('json_file')
-        
+
         if json_file:
             try:
-                # Read the uploaded JSON file
                 json_data = json.loads(json_file.read().decode('utf-8'))
+                user_profile = Profile.objects.get(user=request.user)
+                local_now = timezone.localtime(timezone.now())
+                notebook_map = {}
+                page_map = {}
+                is_edited=False
 
-                # Get the current logged-in user as the author
-                author = Profile.objects.get(user=request.user)
+                with transaction.atomic():  # Ensures atomicity
+                    # Create Notebooks
+                    for obj in json_data.get('notebook', []):
+                        fields = obj['fields']
+                        author_id = fields.get('author', None)
+                    
+                        # Find the real author, fallback to None (We don't want to change ownership)
+                        real_author = Profile.objects.filter(id=author_id).first()
+                        author = user_profile  # Always assign request.user
 
-                print('JSON data loaded successfully.')
-
-                # Deserialize and save Notebook data
-                notebook_data = json_data['notebook']
-                for obj in notebook_data:
-                    title = obj['fields']['title']
-                    body = obj['fields']['body']
-                    priority = obj['fields']['priority']
-                    is_favourite = obj['fields']['is_favourite']
-                    is_shared = obj['fields']['is_shared']
-                    created_at = obj['fields']['created_at']
-                    updated_at = obj['fields']['updated_at']
-                    if not Notebook.objects.filter(title=title).exists():
-                        notebook = Notebook.objects.create(
-                            title=title,
-                            body=body,
-                            priority=priority,
-                            is_favourite=is_favourite,
-                            is_shared=is_shared,
-                            created_at=created_at,
-                            updated_at=updated_at,
-                            author=author
+                        # Check if notebook already exists for the logged-in user
+                        notebook, created = Notebook.objects.update_or_create(
+                            title=fields['title'],  # Use title as unique identifier
+                            author=author,  # Ensure it's the logged-in user's notebook
+                            defaults={
+                                'body': fields['body'],
+                                'priority': fields['priority'],
+                                'is_favourite': fields['is_favourite'],
+                                'is_shared': fields['is_shared'],
+                            }
                         )
-                        print('Notebook saved:', title )
-                        # print(notebook.pk)
+  
+                        # Manually set timestamps
+                        notebook.created_at = local_now if created else notebook.created_at
+                        notebook.updated_at = local_now
+                        notebook.save()
 
-                # Deserialize and save Page data
-                pages_data = json_data['pages']
-                for obj in pages_data:
-                    title = obj['fields']['title']
-                    body = obj['fields']['body']
-                    # notebook_title = obj['fields']['notebook']
-                    is_favourite = obj['fields']['is_favourite']
-                    created_at = obj['fields']['created_at']
-                    updated_at = obj['fields']['updated_at']
-                    if Notebook.objects.filter(id=notebook.pk).exists():
-                        notebook = Notebook.objects.get(id=notebook.pk)
-                        page = Page.objects.create(
-                            title=title,
-                            body=body,
-                            notebook=notebook,
-                            is_favourite=is_favourite,
-                            created_at=created_at,
-                            updated_at=updated_at,
-                            author=author
-                        )
-                        print('Page saved:', title)
+                        notebook_map[obj['pk']] = notebook  # Store reference
+
+                        if not created:
+                            is_edited = True
+
+                    # Create Pages
+                    for obj in json_data.get('pages', []):
+                        fields = obj['fields']
+                        notebook_id = fields['notebook']
+                        notebook = notebook_map.get(notebook_id)
+
+                        if notebook:
+                            # Create new page, no update, only creation
+                            page, created = Page.objects.update_or_create(
+                                title=fields['title'],
+                                notebook=notebook,
+                                author=notebook.author,
+                                defaults={
+                                    'body':fields['body'],
+                                    'is_favourite':False,
+                                    'created_at':local_now,
+                                    'updated_at':local_now,
+                                }
+                            )
+                            page_map[obj['pk']] = page
+
+                            if not created:
+                                is_edited = True
+
+
+                    # Create SubPages
+                    for obj in json_data.get('subpages', []):
+                        fields = obj['fields']
+                        page_id = fields['page']
+                        page = page_map.get(page_id)
+
+                        if page:
+                            subpage, created = SubPage.objects.update_or_create(
+                                title=fields['title'],
+                                page=page,
+                                author=page.author , 
+                                notebook=page.notebook,
+                                defaults={
+                                    'body':fields['body'],
+                                    'created_at':local_now,
+                                    'updated_at':local_now,
+                                }
+                            )
+
+                            if not created:
+                                is_edited = True
+                    # Format the time as "12 December, 2024 - 01:50"
+                    formatted_time = local_now.strftime('%d %B, %Y - %H:%M')
+
+                    # Log activity in the **real author's profile** if they exist
+                    if not is_edited:
+                        if real_author and real_author != user_profile:
+                            Activity.objects.create(
+                                author=real_author,
+                                title='Notebook Added',
+                                body=f"'{notebook.title}' Notebook was added by {user_profile.user.username} on {formatted_time}."
+                            )
+
+                        # Log activity
+                        Activity.objects.create(author=user_profile, title='Created Notebook from JSON', body='Notebook and its pages were created')
+                        messages.success(request, 'Notebook created successfully from uploaded document!')
                     else:
-                        print('Notebook not found for page:', title)
+                        # Log activity
+                        Activity.objects.create(author=user_profile, title=f'{notebook.title} Notebook Updated from JSON', body=f'{notebook.title} Notebook and its pages were Updated')
+                        messages.success(request, f'{notebook.title} Notebook updated successfully from uploaded document!')
+                    return redirect('home')
 
-                # Deserialize and save SubPage data
-                subpages_data = json_data['subpages']
-                for obj in subpages_data:
-                    title = obj['fields']['title']
-                    body = obj['fields']['body']
-                    # page_title = obj['fields']['page']
-                    created_at = obj['fields']['created_at']
-                    updated_at = obj['fields']['updated_at']
-                    if Page.objects.filter(id=page.pk).exists():
-                        page = Page.objects.get(id=page.pk)
-                        SubPage.objects.create(
-                            title=title,
-                            body=body,
-                            page=page,
-                            created_at=created_at,
-                            updated_at=updated_at,
-                            author=author
-                        )
-                        print('Subpage saved:', title)
-                    else:
-                        print('Page not found for subpage:', title)
-
-                # return JsonResponse({'message': 'JSON data loaded successfully.'}, status=200)
-                Activity.objects.create(author=author, title='Loaded JSON Data', body='Loaded JSON Data')
-                messages.success(request, 'JSON data loaded successfully!')
-                return redirect('home')
             except Exception as e:
-                print('Error loading JSON data:', str(e))
-                messages.error(request, 'Error loading JSON data: ' + str(e))
+                messages.error(request, f'Error processing JSON: {str(e)}')
                 return redirect('home')
-                # return JsonResponse({'error': f'Error loading JSON data: {str(e)}'}, status=400)
+
         else:
-            print('No JSON file uploaded.')
             messages.error(request, 'No JSON file uploaded.')
             return redirect('home')
-            # return JsonResponse({'error': 'No JSON file uploaded.'}, status=400)
 
     return render(request, 'load_json.html')
+
 
 def incrementPriority(request, pk):
     notebook = Notebook.objects.get(id=pk)
@@ -511,19 +575,49 @@ def deleteAllActivities(request):
     messages.success(request, 'All activities deleted successfully!')
     return redirect('home')
 
+# def updateStickyNotes(request, pk):
+#     stickynote = StickyNotes.objects.get(id=pk)
+#     logined_profile = Profile.objects.get(user=request.user)
+#     if request.method == 'POST':
+#         form = StickyNotesForm(request.POST, instance=stickynote)
+#         if form.is_valid():
+#             form.save()
+#             Activity.objects.create(author=logined_profile, title='Updated Sticky Note', body=f'Updated Sticky Note with title of: {stickynote.title}')
+#             messages.success(request, 'Sticky note updated successfully!')
+#             return redirect('home')
+#     else:
+#         form = StickyNotesForm(instance=stickynote)
+#     return render(request, 'update_sticky_notes.html', {'form': form, 'stickynote': stickynote})
 def updateStickyNotes(request, pk):
-    stickynote = StickyNotes.objects.get(id=pk)
+    """Handles updating sticky notes with autosave support."""
     logined_profile = Profile.objects.get(user=request.user)
-    if request.method == 'POST':
-        form = StickyNotesForm(request.POST, instance=stickynote)
-        if form.is_valid():
-            form.save()
-            Activity.objects.create(author=logined_profile, title='Updated Sticky Note', body=f'Updated Sticky Note with title of: {stickynote.title}')
-            messages.success(request, 'Sticky note updated successfully!')
-            return redirect('home')
-    else:
-        form = StickyNotesForm(instance=stickynote)
-    return render(request, 'update_sticky_notes.html', {'form': form, 'stickynote': stickynote})
+    stickynote = get_object_or_404(StickyNotes, id=pk, author=logined_profile)
+
+    if request.method == "POST":
+        title = request.POST.get("title", stickynote.title)
+        body = request.POST.get("body", stickynote.body)
+
+        updated = False
+        if stickynote.title != title:
+            stickynote.title = title
+            updated = True
+        if stickynote.body != body:
+            stickynote.body = body
+            updated = True
+
+        if updated:
+            stickynote.save()
+            Activity.objects.create(
+                author=logined_profile,
+                title="Updated Sticky Note",
+                body=f"Updated Sticky Note with title: {stickynote.title}"
+            )
+            messages.success(request, "Sticky note updated successfully!")
+            return HttpResponse("Saved")
+
+        return HttpResponse("")  # No changes, return empty response
+
+    return render(request, "update_sticky_notes.html", {"stickynote": stickynote})
 
 def create_remainder(request):
     logined_profile = Profile.objects.get(user=request.user)
@@ -566,7 +660,135 @@ def create_notebook(request):
                 pass
     else:
         form = NotebookForm()
-    return render(request, 'notebook_create.html', {'form': form})
+    return render(request, 'create_notebook.html', {'form': form})
+
+def notebook_form(request, notebook_id=None):
+    """Handles both creating and updating a notebook in a single template."""
+    notebook = None
+    logged_in_profile = Profile.objects.get(user=request.user)
+    if notebook_id:
+        notebook = get_object_or_404(Notebook, id=notebook_id)
+
+    if request.method == "POST":
+        if notebook:
+            # Update notebook
+            notebook.title = request.POST.get("title", notebook.title)
+            notebook.body = request.POST.get("body", notebook.body)
+            notebook.priority = request.POST.get("priority", notebook.priority)
+            notebook.is_password_protected = request.POST.get("is_password_protected") == "on"
+            notebook.author = logged_in_profile
+            if notebook.is_password_protected:
+                notebook.password = request.POST.get("password", notebook.password)
+            else:
+                notebook.password = ""  # Clear password if checkbox is unchecked
+
+            notebook.save()
+            return JsonResponse({"status": "saved", "title": notebook.title})
+
+        else:
+            # Create new notebook
+            title = request.POST.get("title", "Untitled")
+            body = request.POST.get("body", "")
+            priority = request.POST.get("priority", 1)
+            is_password_protected = request.POST.get("is_password_protected") == "on"
+            password = request.POST.get("password", "") if is_password_protected else ""
+
+            new_notebook = Notebook.objects.create(
+                title=title, body=body, priority=priority, 
+                is_password_protected=is_password_protected, password=password, author=logged_in_profile
+            )
+            # Do not remove this
+            new_page = Page.objects.create(title="Page", body="Dummy Body", notebook=new_notebook, author=logged_in_profile)
+            # Do not remove this ^
+            print(new_page)
+            return JsonResponse({"redirect": f"/notebook/{new_notebook.pk}/"})
+
+    return render(request, "notebook_form.html", {"notebook": notebook})
+
+def page_form(request, page_pk=None, notebook_pk=None):
+    """Handles both creating and updating a notebook in a single template."""
+    page = None
+    notebook = None
+    logged_in_profile = Profile.objects.get(user=request.user)
+    if notebook_pk:
+        notebook = get_object_or_404(Notebook, id=notebook_pk)
+    if page_pk:
+        page = get_object_or_404(Page, id=page_pk)
+
+    if request.method == "POST":
+        if page:
+            # Update notebook
+            page.title = request.POST.get("title", page.title)
+            page.body = request.POST.get("body", page.body)
+            page.order = request.POST.get("order", page.order)
+
+            page.save()
+            return JsonResponse({"status": "saved", "title": page.title, "body": page.body})
+
+        elif notebook:
+            # Create new notebook
+            title = request.POST.get("title", "Untitled")
+            body = request.POST.get("body", "")
+            order = request.POST.get("order", 1)
+
+            new_page = Page.objects.create(
+                title=title, body=body, notebook=notebook, order=order,author=logged_in_profile
+            )
+            return JsonResponse({"redirect": f"/page/{new_page.pk}/"})
+
+    return render(request, "page_form.html", {"page": page, "notebook": notebook})
+
+def autosave_notebook(request,pk):
+    """Handles autosaving the notebook fields."""
+    if request.method == "POST":
+        # notebook_id = request.POST.get("notebook_id")
+        notebook = get_object_or_404(Notebook, id=pk)
+
+        # Update fields
+        notebook.title = request.POST.get("title", notebook.title)
+        notebook.priority = request.POST.get("priority", notebook.priority)
+        notebook.body = request.POST.get("body", notebook.body)
+        notebook.is_password_protected = request.POST.get("is_password_protected", "off") == "on"
+        notebook.password = request.POST.get("password", notebook.password)
+
+        # Save the updated notebook
+        notebook.save()
+        return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
+    
+    return JsonResponse({"message": "Error"}, status=400)
+
+def autosave_page(request,pk):
+    """Handles autosaving the page fields."""
+    if request.method == "POST":
+        # notebook_id = request.POST.get("notebook_id")
+        page = get_object_or_404(Page, id=pk)
+
+        # Update fields
+        page.title = request.POST.get("title", page.title)
+        page.body = request.POST.get("body", page.body)
+        page.order = request.POST.get("order", page.order)
+
+        # Save the updated notebook
+        page.save()
+        return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
+    
+    return JsonResponse({"message": "Error"}, status=400)
+
+@csrf_exempt
+def update_page_order(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        notebook_id = data.get("notebook_id")
+        
+        if not notebook_id:
+            return JsonResponse({"status": "error", "message": "Notebook ID missing"}, status=400)
+
+        for page_data in data["pages"]:
+            Page.objects.filter(id=page_data["id"], notebook_id=notebook_id).update(order=page_data["order"])
+
+        return JsonResponse({"status": "success"})
+    
+    return JsonResponse({"status": "error"}, status=400)
 
 def create_page(request, pk):
     notebook = Notebook.objects.get(id=pk)
@@ -605,6 +827,195 @@ def create_subpage(request, notebook_pk:int,page_pk:int):
     else:
         form = SubPageForm()
     return render(request, 'sub_page_create.html', {'form': form})
+
+def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
+    """Handles both creating and updating a subpage, allowing updates with just subpage_pk."""
+    
+    subpage = None
+    notebook = None
+    page = None
+    logined_profile = get_object_or_404(Profile, user=request.user)
+
+    # If subpage_pk is provided, fetch its related notebook and page automatically
+    if subpage_pk:
+        subpage = get_object_or_404(SubPage, id=subpage_pk)
+        notebook = subpage.notebook
+        page = subpage.page
+    else:
+        if not notebook_pk or not page_pk:
+            return redirect("home")  # Prevents errors when creating a new subpage
+        
+        notebook = get_object_or_404(Notebook, id=notebook_pk)
+        page = get_object_or_404(Page, id=page_pk)
+
+    if request.method == 'POST':
+        if subpage:
+            # Update existing subpage
+            subpage.title = request.POST.get("title", subpage.title)
+            subpage.body = request.POST.get("body", subpage.body)
+            subpage.save()
+
+            if request.headers.get("HX-Request"):
+                return JsonResponse({"status": "saved", "title": subpage.title})
+            return redirect("update_subpage", subpage_pk=subpage.id)  
+
+        else:
+            # Create new subpage
+            title = request.POST.get("title", "Untitled")
+            body = request.POST.get("body", "")
+
+            new_subpage = SubPage.objects.create(
+                title=title, body=body, notebook=notebook, page=page, author=logined_profile
+            )
+
+            # Save last created subpage in session for redirection
+
+            Activity.objects.create(
+                author=logined_profile, 
+                title="Created New Subpage",
+                body=f"Created a new subpage under {new_subpage.title}"
+            )
+
+            if request.headers.get("HX-Request"):
+                return JsonResponse({"redirect": reverse("update_sub_page", kwargs={"subpage_pk": new_subpage.id})})
+            return redirect("update_sub_page", subpage_pk=new_subpage.id)  
+
+    return render(request, "subpage_form.html", {"subpage": subpage, "page": page, "notebook": notebook})
+
+def autosave_subpage(request,pk):
+    """Handles autosaving the Subpage fields."""
+    if request.method == "POST":
+        # notebook_id = request.POST.get("notebook_id")
+        subPage = get_object_or_404(SubPage, id=pk)
+
+        # Update fields
+        subPage.title = request.POST.get("title", subPage.title)
+        subPage.body = request.POST.get("body", subPage.body)
+
+        # Save the updated notebook
+        subPage.save()
+        return JsonResponse({"message": "Saved!"}, status=200, safe=False, headers={"HX-Trigger": "noteSaved"})
+    
+    return JsonResponse({"message": "Error"}, status=400)
+
+def remainder_form(request, remainder_pk=None):
+    """Handles both creating and updating a reminder in a single template."""
+    logined_profile = Profile.objects.get(user=request.user)
+    remainder = None
+
+    # If editing, fetch the existing remainder
+    if remainder_pk:
+        remainder = get_object_or_404(Remainder, id=remainder_pk, author=logined_profile)
+
+    if request.method == "POST":
+        title = request.POST.get("title", remainder.title if remainder else "Untitled")
+        body = request.POST.get("body", remainder.body if remainder else "")
+        is_favourite = request.POST.get("is_favourite", "false") == "true"
+        is_completed = request.POST.get("is_completed", "false") == "true"
+
+        # Convert alert_time from string to datetime (Handle empty value)
+        alert_time_str = request.POST.get("alert_time", "")
+        try:
+            alert_time = datetime.datetime.strptime(alert_time_str, "%Y-%m-%dT%H:%M") if alert_time_str else timezone.now()
+        except ValueError:
+            alert_time = timezone.now()  # Fallback to current time if invalid
+
+        if remainder:
+            # Update existing remainder
+            remainder.title = title
+            remainder.body = body
+            remainder.alert_time = alert_time
+            remainder.is_favourite = is_favourite
+            remainder.is_completed = is_completed
+            remainder.save()
+            messages.success(request, "Reminder updated successfully!")
+            return JsonResponse({"status": "saved", "title": remainder.title, "body": remainder.body, "alert_time": remainder.alert_time})
+
+        else:
+            # Create new remainder
+            new_remainder = Remainder.objects.create(
+                title=title, body=body, alert_time=alert_time,
+                is_favourite=is_favourite, is_completed=is_completed, author=logined_profile
+            )
+            messages.success(request, "Reminder created successfully!")
+            return JsonResponse({"redirect": f"/remainder/{new_remainder.pk}/"})
+
+    return render(request, "remainder_form.html", {"remainder": remainder})
+
+def autosave_reminder(request, remainder_pk):
+    """Autosaves a reminder's title, body, alert time, and status."""
+    if request.method == "POST":
+        logined_profile = Profile.objects.get(user=request.user)
+        remainder = get_object_or_404(Remainder, id=remainder_pk, author=logined_profile)
+
+        # Get updated fields from request
+        title = request.POST.get("title", remainder.title)
+        body = request.POST.get("body", remainder.body)
+        is_favourite = request.POST.get("is_favourite", "false") == "true"
+        is_completed = request.POST.get("is_completed", "false") == "true"
+
+        # Convert alert_time from string to datetime
+        alert_time_str = request.POST.get("alert_time", None)
+        try:
+            alert_time = datetime.datetime.strptime(alert_time_str, "%Y-%m-%dT%H:%M") if alert_time_str else remainder.alert_time
+            alert_time = timezone.make_aware(alert_time, timezone.get_current_timezone())  # Make it timezone-aware
+        except (ValueError, TypeError):
+            alert_time = remainder.alert_time  # Fallback if invalid format
+
+        # Update only if values have changed
+        updated = False
+        if remainder.title != title:
+            remainder.title = title
+            updated = True
+        if remainder.body != body:
+            remainder.body = body
+            updated = True
+        if remainder.alert_time != alert_time:
+            remainder.alert_time = alert_time
+            updated = True
+        if remainder.is_favourite != is_favourite:
+            remainder.is_favourite = is_favourite
+            updated = True
+        if remainder.is_completed != is_completed:
+            remainder.is_completed = is_completed
+            updated = True
+
+        if updated:
+            remainder.save()
+            return HttpResponse("Saved")
+        else:
+            return HttpResponse("")  # No updates needed
+
+    return HttpResponse("Invalid request", status=400)
+
+def autosave_sticky_notes(request, stickynote_id):
+    """Autosaves a user's sticky note when updated."""
+    if request.method == "POST":
+        logined_profile = Profile.objects.get(user=request.user)
+        stickynote = get_object_or_404(StickyNotes, id=stickynote_id, author=logined_profile)
+
+        # Redirect if user visits this URL directly
+        if not request.headers.get("HX-Request"):  
+            return HttpResponseRedirect(f"/stickynote/{stickynote.id}/")  # Redirect to correct page
+
+        title = request.POST.get("title", stickynote.title)
+        body = request.POST.get("body", stickynote.body)
+
+        updated = False
+        if stickynote.title != title:
+            stickynote.title = title
+            updated = True
+        if stickynote.body != body:
+            stickynote.body = body
+            updated = True
+
+        if updated:
+            stickynote.save()
+            return HttpResponse("Saved")
+        else:
+            return HttpResponse("")  # No updates needed
+
+    return HttpResponse("Invalid request", status=400)
 
 @login_required
 def search(request):
