@@ -1,0 +1,72 @@
+<div class="modal fade" id="example-modal-page-{{ page.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-page-{{ page.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+          <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}" style="font-size: 24px;"> <i class="fas fa-arrow-left"></i> < </button>
+        <h1 class="modal-title fs-3" id="modal-title-2"><i class="fas fa-book-open"></i> &ensp;{{ page.title }}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-3">
+                  <!-- First collapse -->
+                <div class="m-2 position-fixed" style="width: 16%;">
+                  <button type="button" class="btn btn-link d-flex align-items-baseline" data-bs-toggle="collapse" data-bs-target="#collapse-example-{{ notebook.id }}" aria-expanded="true" aria-controls="collapse-example-{{ notebook.id }}">
+                  <i class="fas fa-book-open"></i> &ensp;Pages
+                </button>
+                <div class="collapse show" id="collapse-example-{{ notebook.id }}">
+                  <div class="ps-4 mt-2">
+                    <ul class="list-unstyled mb-0">
+                      {% for subpage in page.subpage_set.all %}
+                          <li class="p-1">&ensp;&ensp;&ensp;&ndash;&ndash; <a href="" data-bs-toggle="modal" data-bs-target="#example-modal-subpage-{{ subpage.id }}" data-subpage-id="{{ subpage.id }}" class="subpage-title">{{ subpage.title }}</a></li>
+                      {% empty %}
+                      <li class="p-1">&ndash; No Pages</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+                </div>
+          </div>
+          <div class="col-9">
+            <div id="page-body-{{ page.id }}" data-page-id="{{ page.id }}">
+              <button id="load-content-page-{{ page.id }}"
+                          hx-get="{% url 'fetch_notebook_pages' page_id=page.id %}"
+                          hx-trigger="click"
+                          hx-target="#page-body-{{ page.id }}"
+                          hx-ext="json-enc"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="updateNotebookBody(event)"
+                          data-page-id="{{ page.id }}"
+                          style="display: none;">
+                  </button>
+                  <div class="text-center" id="loading-spinner-page-{{ page.id }}">
+                    <div class="spinner-border text-primary mt-3 mb-2 mt-lg-5 specific-w-50 specific-h-50" role="status" aria-hidden="true"></div>
+                    <p>Loading Text... Hang on!</p>
+                  </div>
+            </div>
+            {% comment %} {{ page.body|safe }} {% endcomment %}
+          </div>
+        </div>
+        <!-- Pop Over -->
+        <!-- <div class="mb-4">
+          <button type="button" class="btn" data-bs-toggle="popover" data-bs-title="Title of the popover" data-bs-content="Content of the popover that spans across multiple lines.">
+            Popover
+          </button>
+        </div> -->
+        <!-- Pop Over -->
+
+      </div>
+      <div class="modal-footer">
+        <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+
+        {% if page.author.id != logined_profile.id %}
+          {% else %}
+          <a href="{% url 'create_subpage' notebook_pk=page.notebook.pk page_pk=page.id %}" class="btn btn-info">Add Sub Page</a>
+          <a href="{% url 'update_page' page_pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="" data-bs-toggle="modal" data-bs-target="#deletePageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+<div class="modal fade" id="example-modal-subpage-{{ subpage.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-subpage-{{ subpage.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+          <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#example-modal-{{ subpage.notebook.id }}"  style="font-size: 24px;"> <i class="fas fa-arrow-left"></i> < </button>
+        <h1 class="modal-title fs-3" id="modal-title-2"><i class="fas fa-book-open"></i> &ensp;{{ subpage.title }}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="subpage-body-{{ subpage.id }}" data-subpage-id="{{ subpage.id }}">
+              <button id="load-content-subpage-{{ subpage.id }}"
+                          hx-get="{% url 'fetch_notebook_subpages' subpage_id=subpage.id %}"
+                          hx-trigger="click"
+                          hx-target="#subpage-body-{{ subpage.id }}"
+                          hx-ext="json-enc"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="updateNotebookBody(event)"
+                          data-subpage-id="{{ subpage.id }}"
+                          style="display: none;">
+                  </button>
+                  <div class="text-center" id="loading-spinner-subpage-{{ subpage.id }}">
+                    <div class="spinner-border text-primary mt-3 mb-2 mt-lg-5 specific-w-50 specific-h-50" role="status" aria-hidden="true"></div>
+                    <p>Loading Text... Hang on!</p>
+                  </div>
+            </div>
+        {% comment %} {{ subpage.body|safe }} {% endcomment %}
+        <!-- Pop Over -->
+        <!-- <div class="mb-4">
+          <button type="button" class="btn" data-bs-toggle="popover" data-bs-title="Title of the popover" data-bs-content="Content of the popover that spans across multiple lines.">
+            Popover
+          </button>
+        </div> -->
+        <!-- Pop Over -->
+
+      </div>
+      <div class="modal-footer">
+        <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+
+        {% if subpage.author.id != logined_profile.id %}
+          {% else %}
+          <a href="{% url 'update_sub_page' subpage_pk=subpage.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="" data-bs-toggle="modal" data-bs-target="#deleteSubPageModal-{{ subpage.id }}" type="button" class="btn btn-outline-danger">Delete</a>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
