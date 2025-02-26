@@ -698,9 +698,8 @@ def notebook_form(request, notebook_id=None):
                 is_password_protected=is_password_protected, password=password, author=logged_in_profile
             )
             # Do not remove this
-            new_page = Page.objects.create(title="Page", body="Dummy Body", notebook=new_notebook, author=logged_in_profile)
+            # new_page = Page.objects.create(title="Page", body="Dummy Body", notebook=new_notebook, author=logged_in_profile)
             # Do not remove this ^
-            print(new_page)
             return JsonResponse({"redirect": f"/notebook/{new_notebook.pk}/"})
 
     return render(request, "notebook_form.html", {"notebook": notebook})
