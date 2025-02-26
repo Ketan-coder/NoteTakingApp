@@ -20,3 +20,6 @@ EXPOSE 8000
 
 # Run the Django server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# For Production
+# CMD ["gunicorn", "--workers=3", "--bind=0.0.0.0:8000", "Timely.wsgi:application"]
