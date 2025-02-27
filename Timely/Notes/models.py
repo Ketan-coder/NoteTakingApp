@@ -176,3 +176,16 @@ class Activity(models.Model):
     #     if not self.updated_at:
     #         self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
     #     super().save(*args, **kwargs)
+
+class Todo(models.Model):
+    title:str = models.CharField(max_length=200)
+    is_completed:bool = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return self.title
+    
+    class Meta:
+        ordering = ['-is_completed']

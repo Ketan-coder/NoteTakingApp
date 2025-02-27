@@ -5,7 +5,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from Notes.utils import render_to_pdf
-from .models import Activity, Notebook, Page, StickyNotes, Remainder, SharedNotebook, SubPage
+from .models import Activity, Notebook, Page, StickyNotes, Remainder, SharedNotebook, SubPage, Todo
 from .forms import NotebookForm, PageForm, StickyNotesForm,RemainderForm,SubPageForm
 from Users.models import Profile
 from django.db import IntegrityError
@@ -132,6 +132,7 @@ def index(request):
         favouritesPages = Page.objects.filter(notebook__in=favouritesNotebooks)
         favouritesRemainders = remainders.filter(is_favourite=True)
         sharedNotebooks = SharedNotebook.objects.filter(owner=logined_profile).order_by('-shared_at')
+        todos = Todo.objects.filter(author=logined_profile).order_by('-is_completed')
         
         # Set up pagination
         paginator = Paginator(activities_list, 5)  # Show 10 activities per page
@@ -150,12 +151,49 @@ def index(request):
         print(f"Time taken: {end_time - start_time}")
         context = {'notebooks': notebooks,'notebooks_list_priority': notebooks_list_priority, 'logined_profile': logined_profile,
                    'activities': activities, 'sticky_notes': sticky_notes, "pages": pages,"subpages": subpages,
-                   'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks, 
+                   'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks, "todos": todos,
                    'favouritesPages': favouritesPages, 'favouritesRemainders': favouritesRemainders,'sharedNotebooks': sharedNotebooks}
     else:
         context = {}
         redirect('login')
     return render(request, "index.html", context)
+
+
+def add_todo(request):
+    """ Add a new todo """
+    logined_profile = Profile.objects.get(user=request.user)
+    if request.method == "POST":
+        title = request.POST.get("todo_title")
+        if title:
+            todo = Todo.objects.create(title=title, author=logined_profile)
+            return render(request, "partials/todo_item.html", {"todo": todo})
+    return HttpResponse(status=400)
+
+def toggle_todo(request, todo_id):
+    """ Toggle todo completion """
+    logined_profile = Profile.objects.get(user=request.user)
+    todo = get_object_or_404(Todo, id=todo_id, author=logined_profile)
+    todo.is_completed = not todo.is_completed
+    todo.save()
+    return render(request, "partials/todo_item.html", {"todo": todo})
+
+# def delete_todo(request, todo_id):
+#     """ Delete a todo item """
+#     logined_profile = Profile.objects.get(user=request.user)
+#     todo = get_object_or_404(Todo, id=todo_id, author=logined_profile)
+#     todo.delete()
+#     return HttpResponse(status=204)
+def delete_todo(request, todo_id):
+    logined_profile = Profile.objects.get(user=request.user)
+    if request.method == "POST":
+        try:
+            todo = get_object_or_404(Todo, id=todo_id,author=logined_profile)
+            todo.delete()
+            messages.success(request, 'Todo Deleted Sucessfully!')
+            return HttpResponse("Deleted successfully")
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({"error": "Invalid request"}, status=400)
 
 # def fetch_notebook_contents(request, notebook_id, page_id=None, subpage_id=None):
 #     """Fetch the body content of a notebook, page, or subpage dynamically for HTMX."""

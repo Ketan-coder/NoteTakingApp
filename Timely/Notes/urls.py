@@ -48,4 +48,7 @@ urlpatterns = [
     path('exportNotebookToJson/<int:pk>/', login_required(views.exportNotebookToJson), name='exportNotebookToJson'), 
     path('loadJsonToModels/', login_required(views.loadJsonToModels), name='loadJsonToModels'), 
 
+    path("todo/add/", login_required(views.add_todo), name="add_todo"),
+    path("todo/toggle/<int:todo_id>/", login_required(views.toggle_todo), name="toggle_todo"),
+    path("todo/delete/<int:todo_id>/", login_required(views.delete_todo), name="delete_todo"),
 ]
