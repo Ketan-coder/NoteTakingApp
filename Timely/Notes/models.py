@@ -75,7 +75,7 @@ class Page(models.Model):
     title:str = models.CharField(max_length=100)
     body:str = models.TextField()
     # is_favourite = models.BooleanField(default=False)
-    order = models.PositiveIntegerField()
+    order = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
