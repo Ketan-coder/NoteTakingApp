@@ -154,7 +154,9 @@
                             </svg>
                           {% endif %}&ensp;
                           {% comment %} <i class="fas fa-book"></i>   {% endcomment %}
-                          
+                          {% if notebook.is_public %}
+                            <span class="badge bg-success">Public</span>
+                          {% endif%}&ensp;
                           {{notebook.title}}
                           <!-- <svg style="width: 1.5%;margin-left: 1%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.<path fill="#3385ff" d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg> -->
                         </b></a></li>
@@ -237,7 +239,11 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
                               <path d="M384 336a63.78 63.78 0 00-46.12 19.7l-148-83.27a63.85 63.85 0 000-32.86l148-83.27a63.8 63.8 0 10-15.73-27.87l-148 83.27a64 64 0 100 88.6l148 83.27A64 64 0 10384 336z"/>
                             </svg>
+                          
                           {% endif %}&ensp;
+                          {% if notebook.is_public %}
+                            <span class="badge bg-success">Public</span>
+                          {% endif%}&ensp;
                           {% comment %} <i class="fas fa-book"></i>   {% endcomment %}
 
                           {{notebook.title}}
@@ -437,12 +443,6 @@
 
 {% for notebook in notebooks %}
 
-{% comment %} {% if notebook.author.id == logined_profile.id %}
-  hello
-{% elif notebook.is_shared == True %}
- no hello
-{% endif %} {% endcomment %}
-
 {% if notebook.author.id != logined_profile.id %}
   {% else %}
 <div class="modal fade" id="example-modal-{{ notebook.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-{{ notebook.id }}" aria-hidden="true">
@@ -546,7 +546,8 @@
             {% if notebook.is_shared %}
               {% comment %} <a href="{% url 'stopSharingNotebook' pk=notebook.id %}" class="btn btn-outline-info disabled"><i class="fas fa-share-alt" disabled></i> Shared Already</a> {% endcomment %}
             {% else %}
-              <a href="{% url 'startingSharedNotebooks' pk=notebook.id %}" class="btn btn-outline-info"><i class="fas fa-share-alt"></i> Share this Notebook</a>
+              <!-- <a href="{% url 'startingSharedNotebooks' pk=notebook.id %}" class="btn btn-outline-info"><i class="fas fa-share-alt"></i> Share this Notebook</a> -->
+              <a href="" data-bs-toggle="modal" data-bs-target="#shareNotebook-{{ notebook.id }}" class="btn btn-outline-info">Share Notebook</a>
             {% endif %} 
           {% endif %}
 
@@ -607,6 +608,81 @@
         </div>
     </div>
 </div>
+{% endfor %}
+
+{% for notebook in notebooks %}
+<div class="modal fade" id="shareNotebook-{{ notebook.id }}" tabindex="-1" aria-labelledby="shareNotebookLabel-{{ notebook.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareNotebookLabel-{{ notebook.id }}">Share Notebook</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'startingSharedNotebooks' notebook.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to share the notebook <i class="fas fa-book"></i> "<strong>{{ notebook.title }}</strong>"?</p>
+                    
+                    <div class="mb-3">
+                        <label for="sharedEmail-{{ notebook.id }}" class="form-label">
+                            Enter Email to Share With <strong>(Leave blank if making Notebook Public)</strong>:
+                        </label>
+                        <input type="email" class="form-control" id="sharedEmail-{{ notebook.id }}" 
+                               name="shared_to_email" placeholder="Enter email"
+                               hx-get="{% url 'fetch_profile_details' %}" 
+                               hx-trigger="keyup changed delay:500ms"
+                               hx-target="#profile-info-{{ notebook.id }}"
+                               hx-indicator=".htmx-indicator"
+                               oninput="toggleCheckbox('{{ notebook.id }}')">
+                    </div>
+
+                    <!-- HTMX Loading Indicator -->
+                    <div class="htmx-indicator" style="display: none;">
+                        <p>Loading...</p>
+                    </div>
+
+                    <!-- HTMX Box for Displaying User Info -->
+                    <div id="profile-info-{{ notebook.id }}" style="display: none;">
+                        <!-- User info will be inserted here -->
+                    </div>
+
+                    <!-- Checkbox for Editing Permission (Hidden by Default) -->
+                    <div class="form-check" id="editPermissionBox-{{ notebook.id }}" style="display: none;">
+                        <input class="form-check-input" type="checkbox" id="canEdit-{{ notebook.id }}" name="can_edit">
+                        <label class="form-check-label" for="canEdit-{{ notebook.id }}">
+                            Allow editing permissions
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Share Notebook</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+  function toggleCheckbox(notebookId) {
+      let emailInput = document.getElementById("sharedEmail-" + notebookId);
+      let checkboxDiv = document.getElementById("editPermissionBox-" + notebookId);
+
+      if (emailInput.value.trim() === "") {
+          checkboxDiv.style.display = "none"; // Hide checkbox if email is empty
+      } else {
+          checkboxDiv.style.display = "block"; // Show checkbox if email is entered
+      }
+  }
+
+  document.body.addEventListener("htmx:afterSwap", function(event) {
+      let targetId = event.detail.elt.id; // Get the updated element ID
+      if (targetId.startsWith("profile-info-")) {
+          let targetElement = document.getElementById(targetId);
+          targetElement.style.display = "block"; // Show profile info if available
+      }
+  });
+</script>
 {% endfor %}
 
 

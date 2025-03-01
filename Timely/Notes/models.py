@@ -19,6 +19,8 @@ class Notebook(models.Model):
     # priority = models.CharField(choices=PRIORITY_LIST,default="Important",max_length=50)
     is_favourite = models.BooleanField(default=False)
     is_shared = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=False)
+    shared_with = models.ManyToManyField(Profile, related_name="shared_notebooks", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_password_protected:bool = models.BooleanField(default=False)
@@ -44,7 +46,8 @@ class Notebook(models.Model):
 class SharedNotebook(models.Model):
     notebook = models.OneToOneField(Notebook, on_delete=models.CASCADE)
     owner = models.ForeignKey(Profile, on_delete=models.CASCADE,related_name='notebook_owner')
-    sharedTo = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='shared_to', blank=True, null=True)
+    # sharedTo = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='shared_to', blank=True, null=True)
+    sharedTo = models.ManyToManyField(Profile, related_name='shared_to', blank=True)
     shared_at = models.DateTimeField(auto_now_add=True)
     shareable_link = models.URLField(blank=True, null=True)
     can_edit = models.BooleanField(default=False)
@@ -54,7 +57,7 @@ class SharedNotebook(models.Model):
             self.shared_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
         
         if not self.shareable_link:
-            self.shareable_link = f'sharedNotebooks/{self.notebook.id}/'
+            self.shareable_link = f'sharedNotebooks/'
 
         if request:
             messages.success(request, f'Notebook shared successfully! Here is the link to view it: {self.shareable_link}')

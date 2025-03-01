@@ -218,7 +218,7 @@ def fetch_notebook_contents(request, notebook_id=None, page_id=None, subpage_id=
     elif page_id:
         content = get_object_or_404(Page, id=page_id).body
     elif notebook_id:
-        notebook = get_object_or_404(Notebook, id=notebook_id, author=request.user.profile)
+        notebook = get_object_or_404(Notebook, id=notebook_id)
         content = notebook.body  # Ensure we fetch the correct body
     else:
         return JsonResponse({"error": "Invalid request"},status=400)
@@ -397,9 +397,9 @@ def loadJsonToModels(request):
                             author=author,  # Ensure it's the logged-in user's notebook
                             defaults={
                                 'body': fields['body'],
-                                'priority': fields['priority'],
-                                'is_favourite': fields['is_favourite'],
-                                'is_shared': fields['is_shared'],
+                                'priority': 0,
+                                'is_favourite': False,
+                                'is_shared': False,
                             }
                         )
   
@@ -427,7 +427,7 @@ def loadJsonToModels(request):
                                 author=notebook.author,
                                 defaults={
                                     'body':fields['body'],
-                                    'is_favourite':False,
+                                    'order':fields['order'],
                                     'created_at':local_now,
                                     'updated_at':local_now,
                                 }
@@ -535,34 +535,193 @@ def decrementPriority(request, pk):
     messages.success(request, 'Priority decremented successfully!')
     return redirect('home')
 
+from django.db import transaction
+
 def stopSharingNotebook(request, pk):
-    shared_notebook = SharedNotebook.objects.get(id=pk)
-    shared_notebook.notebook.is_shared = False
-    shared_notebook.notebook.save()
-    Activity.objects.create(author=shared_notebook.owner, title='Stopped Sharing', body=f'Stopped sharing notebook with title of: {shared_notebook.notebook.title}')
-    shared_notebook.delete()
-    messages.success(request, 'Notebook stopped sharing successfully!')
-    return redirect('home')
+    with transaction.atomic():  # Ensures everything commits or rolls back
+        shared_notebook = get_object_or_404(SharedNotebook, id=pk)
+        notebook = shared_notebook.notebook  # Direct reference
+
+        # Update Notebook fields
+        notebook.is_shared = False
+        notebook.is_public = False
+        notebook.save(update_fields=["is_shared", "is_public"])  
+
+        # Force refresh from DB
+        notebook.refresh_from_db()
+
+        # Clear shared users
+        shared_notebook.sharedTo.clear()
+        shared_notebook.can_edit = False
+        shared_notebook.save()
+
+        # Log Activity
+        Activity.objects.create(
+            author=shared_notebook.owner, 
+            title="Stopped Sharing", 
+            body=f"Stopped sharing notebook with title: {notebook.title}"
+        )
+
+        # Delete the SharedNotebook entry
+        shared_notebook.delete()
+
+        # Ensure notebook object is properly updated
+        Notebook.objects.filter(id=notebook.id).update(is_shared=False, is_public=False)
+
+    messages.success(request, "Notebook sharing has been stopped successfully!")
+    return redirect("home")
+
 
 def startSharingNotebook(request, pk):
-    notebook = Notebook.objects.get(id=pk)
-    shared_notebook = SharedNotebook.objects.create(notebook=notebook, owner=notebook.author)
-    if shared_notebook.notebook.is_password_protected:
-        messages.error(request, 'Remove Password to Share it!')
+    notebook = get_object_or_404(Notebook, id=pk)
+    logined_profile = get_object_or_404(Profile, user=request.user)  # Get logged-in profile
+
+    # Ensure only the owner can share the notebook
+    if notebook.author != logined_profile:
+        messages.error(request, "You do not have permission to share this notebook.")
+        return redirect("home")
+
+    # Prevent sharing if the notebook is password-protected
+    if notebook.is_password_protected:
+        messages.error(request, "Remove the password before sharing!")
+        return redirect("home")
+
+    if request.method == "POST":
+        shared_email = request.POST.get("shared_to_email", "").strip()
+        can_edit = "can_edit" in request.POST  # Checkbox for edit permissions (Boolean)
+
+        # Get or create a shared notebook entry
+        shared_notebook, created = SharedNotebook.objects.get_or_create(
+            notebook=notebook,
+            defaults={"owner": logined_profile}
+        )
+
+        if shared_email:
+            # Try to find the user by email
+            shared_to_user = Profile.objects.filter(email=shared_email).first()
+            if not shared_to_user:
+                messages.error(request, "User with this email does not exist.")
+                return redirect("home")
+
+            shared_notebook.sharedTo.add(shared_to_user)  
+            shared_notebook.can_edit = can_edit  # Assign edit permission
+            
+            notebook.shared_with.add(shared_to_user)  
+
+            notebook.is_shared = True
+            notebook.save()
+            shared_notebook.save()
+
+            messages.success(request, f"Notebook shared successfully with {shared_email}!")
+
+        else:
+            # ✅ Public sharing (no email provided)
+            shared_notebook.sharedTo.clear()  # Remove all specific shared users
+            shared_notebook.can_edit = False  # Make public notebooks non-editable
+            notebook.is_public = True  # ✅ Set notebook to public
+            notebook.is_shared = True  # ✅ Keep it marked as shared
+
+            # ✅ Remove all users from shared_with (since it’s public)
+            notebook.shared_with.clear()  
+
+            notebook.save()
+            shared_notebook.save()
+
+            messages.success(request, "Notebook has been made public!")
+
+        return redirect("home")
+
+    return redirect("home")
+
+def fetch_profile_details(request):
+    email = request.GET.get("shared_to_email", "").strip()
+
+    if not email:
+        return HttpResponse("<div class='alert alert-warning'>Please enter an email.</div>")
+
+    profile = Profile.objects.filter(email=email).first()
+
+    if profile:
+        return HttpResponse(f"<div class='alert alert-success'>You are going to share this notebook with <strong>{profile.firstName} {profile.lastName}</strong>.</div>")
     else:
-        shared_notebook.notebook.is_shared = True
-        shared_notebook.notebook.save()
-        shared_notebook.save()
-        Activity.objects.create(author=notebook.author, title='Started Sharing', body=f'Started sharing notebook with title of: {notebook.title}')
-        messages.success(request, 'Notebook started sharing successfully! Here is the link to view it: ' + shared_notebook.shareable_link)
-    return redirect('home')
+        return HttpResponse("<div class='alert alert-danger'>User not found. Please check the email.</div>")
 
+# def shared_notebooks_view(request, pk):
+#     logined_profile = Profile.objects.filter(user=request.user)
+#     shared_notebook = Notebook.objects.filter(id=pk,shared_with=logined_profile)
+#     public_notebooks = Notebook.objects.filter
+#     pages = Page.objects.filter(notebook__in=shared_notebook)
+#     subpages = SubPage.objects.filter(page__in=pages)
+#     return render(request, 'shared_notebook.html', {'shared_notebook': shared_notebook,'pages': pages, 'subpages': subpages})
 
-def shared_notebooks_view(request, pk):
-    shared_notebook = Notebook.objects.filter(id=pk)
-    pages = Page.objects.filter(notebook__in=shared_notebook)
-    subpages = SubPage.objects.filter(page__in=pages)
-    return render(request, 'shared_notebook.html', {'shared_notebook': shared_notebook,'pages': pages, 'subpages': subpages})
+# def shared_notebooks_view(request, pk):
+#     logined_profile = get_object_or_404(Profile, user=request.user)
+
+#     # Fetch shared and public notebooks
+#     notebooks = Notebook.objects.filter(
+#         id=pk, 
+#         shared_with=logined_profile
+#     ).prefetch_related('page_set__subpage_set') 
+    
+#     shared_notebooks = SharedNotebook.objects.filter(notebook=notebooks).select_related('notebook')
+
+#     pages = []
+#     subpages = []
+
+#     for notebook in notebooks:
+#         pages.extend(notebook.page_set.all())  # Fetch all pages for the notebook
+#         for page in notebook.page_set.all():
+#             subpages.extend(page.subpage_set.all())  # Fetch all subpages for each page
+
+#     return render(request, 'shared_notebook.html', {
+#         'notebooks': notebooks,
+#         'shared_notebooks':shared_notebooks,
+#         'pages': pages,
+#         'subpages': subpages,
+#         'logined_profile': logined_profile,
+#     })
+
+def shared_notebooks_view(request):
+    logined_profile = get_object_or_404(Profile, user=request.user)
+
+    # Fetch all notebooks shared with the logged-in profile
+    notebooks = Notebook.objects.filter(shared_with=logined_profile).prefetch_related('page_set__subpage_set')
+
+    # Fetch shared notebook permissions
+    shared_notebooks = SharedNotebook.objects.filter(notebook__in=notebooks).select_related('notebook')
+
+    pages = []
+    subpages = []
+
+    for notebook in notebooks:
+        pages.extend(notebook.page_set.all())  # Fetch all pages
+        for page in notebook.page_set.all():
+            subpages.extend(page.subpage_set.all())  # Fetch subpages
+
+    return render(request, 'shared_notebook.html', {
+        'notebooks': notebooks,
+        'shared_notebooks': shared_notebooks,
+        'pages': pages,
+        'subpages': subpages,
+        'logined_profile': logined_profile,
+    })
+
+def public_notebooks_view(request):
+    # Fetch all public notebooks with related pages and subpages in one query
+    public_notebooks = Notebook.objects.filter(is_public=True).prefetch_related(
+        'page_set__subpage_set'
+    )
+
+    # Use list comprehensions for efficiency
+    pages = [page for notebook in public_notebooks for page in notebook.page_set.all()]
+    subpages = [subpage for page in pages for subpage in page.subpage_set.all()]
+
+    return render(request, 'public_notebooks.html', {
+        'notebooks': public_notebooks,
+        'pages': pages,
+        'subpages': subpages,
+    })
+
 
 def addToFavourites(request, pk):
     notebook = Notebook.objects.get(id=pk)

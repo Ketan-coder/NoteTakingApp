@@ -34,7 +34,8 @@ urlpatterns = [
     path('forgot_password_notebook/<int:pk>/', login_required(views.notebook_password_reset_page), name='forgot_password'),
     path('favourites/add/<int:pk>/', login_required(views.addToFavourites), name='addToFavourites'),
     path('favourites/remove/<int:pk>/', login_required(views.removeToFavourites), name='removeToFavourites'),
-    path('sharedNotebooks/<int:pk>/', views.shared_notebooks_view, name='sharedNotebooks'),
+    path('sharedNotebooks/', views.shared_notebooks_view, name='sharedNotebooks'),
+    path('publicNotebooks/', views.public_notebooks_view, name='publicNotebooks'),
     path('startSharingNotebooks/<int:pk>/', login_required(views.startSharingNotebook), name='startingSharedNotebooks'),
     path('stopSharingNotebook/<int:pk>/', login_required(views.stopSharingNotebook), name='stopSharingNotebook'),
     path('deleteAllActivities/', login_required(views.deleteAllActivities), name='deleteAllActivities'),
@@ -51,4 +52,5 @@ urlpatterns = [
     path("todo/add/", login_required(views.add_todo), name="add_todo"),
     path("todo/toggle/<int:todo_id>/", login_required(views.toggle_todo), name="toggle_todo"),
     path("todo/delete/<int:todo_id>/", login_required(views.delete_todo), name="delete_todo"),
+    path("fetch-profile/", login_required(views.fetch_profile_details), name="fetch_profile_details"),
 ]
