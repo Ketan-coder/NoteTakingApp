@@ -320,7 +320,9 @@
                            &ensp;{{notebook.notebook.title}}
                           <!-- <svg style="width: 1.5%;margin-left: 1%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.<path fill="#3385ff" d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg> -->
                         </a>&ensp;&ensp; <a href="https://timely.pythonanywhere.com/{{notebook.shareable_link}}" onClick="window.open(this.href); return false;">Shareable Link - https://timely.pythonanywhere.com/{{notebook.shareable_link}}</a></li>
-                      {% endfor %}
+                        {% empty %}
+                        <li class="list-group-item p-3">No Notebooks are shared!</li>
+                        {% endfor %}
                     </ul>
                     </div>
         </div>
@@ -651,6 +653,16 @@
                             Allow editing permissions
                         </label>
                     </div>
+                    <hr>
+                    <div class="mb-3">
+                      <label for="shareableLink-{{ notebook.id }}" class="form-label">Shareable Link:</label>
+                      <div class="input-group">
+                          <input type="text" class="form-control" id="shareableLink-{{ notebook.id }}" value="https://timely.pythonanywhere.com/sharedNotebooks/" readonly>
+                          <button class="btn btn-secondary" type="button" onclick="copyToClipboard('shareableLink-{{ notebook.id }}')">
+                              Copy Link
+                          </button>
+                      </div>
+                  </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -680,6 +692,14 @@
           targetElement.style.display = "block"; 
       }
   });
+
+  function copyToClipboard(elementId) {
+        let copyText = document.getElementById(elementId);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand("copy");
+        alert("Copied to clipboard: " + copyText.value);
+    }
 </script>
 {% endfor %}
 
