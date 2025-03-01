@@ -624,11 +624,11 @@
                     <p>Are you sure you want to share the notebook <i class="fas fa-book"></i> "<strong>{{ notebook.title }}</strong>"?</p>
                     
                     <div class="mb-3">
-                        <label for="sharedEmail-{{ notebook.id }}" class="form-label">
-                            Enter Email to Share With <strong>(Leave blank if making Notebook Public)</strong>:
+                        <label for="sharedEmails-{{ notebook.id }}" class="form-label">
+                            Enter Emails to Share With (Separate multiple emails with commas):
                         </label>
-                        <input type="email" class="form-control" id="sharedEmail-{{ notebook.id }}" 
-                               name="shared_to_email" placeholder="Enter email"
+                        <input type="text" class="form-control" id="sharedEmails-{{ notebook.id }}" 
+                               name="shared_to_emails" placeholder="Enter emails, separated by commas"
                                hx-get="{% url 'fetch_profile_details' %}" 
                                hx-trigger="keyup changed delay:500ms"
                                hx-target="#profile-info-{{ notebook.id }}"
@@ -642,11 +642,9 @@
                     </div>
 
                     <!-- HTMX Box for Displaying User Info -->
-                    <div id="profile-info-{{ notebook.id }}" style="display: none;">
-                        <!-- User info will be inserted here -->
-                    </div>
+                    <div id="profile-info-{{ notebook.id }}" style="display: none;"></div>
 
-                    <!-- Checkbox for Editing Permission (Hidden by Default) -->
+                    <!-- Checkbox for Editing Permission -->
                     <div class="form-check" id="editPermissionBox-{{ notebook.id }}" style="display: none;">
                         <input class="form-check-input" type="checkbox" id="canEdit-{{ notebook.id }}" name="can_edit">
                         <label class="form-check-label" for="canEdit-{{ notebook.id }}">
@@ -665,21 +663,21 @@
 
 <script>
   function toggleCheckbox(notebookId) {
-      let emailInput = document.getElementById("sharedEmail-" + notebookId);
+      let emailInput = document.getElementById("sharedEmails-" + notebookId);
       let checkboxDiv = document.getElementById("editPermissionBox-" + notebookId);
 
       if (emailInput.value.trim() === "") {
-          checkboxDiv.style.display = "none"; // Hide checkbox if email is empty
+          checkboxDiv.style.display = "none"; 
       } else {
-          checkboxDiv.style.display = "block"; // Show checkbox if email is entered
+          checkboxDiv.style.display = "block"; 
       }
   }
 
   document.body.addEventListener("htmx:afterSwap", function(event) {
-      let targetId = event.detail.elt.id; // Get the updated element ID
+      let targetId = event.detail.elt.id; 
       if (targetId.startsWith("profile-info-")) {
           let targetElement = document.getElementById(targetId);
-          targetElement.style.display = "block"; // Show profile info if available
+          targetElement.style.display = "block"; 
       }
   });
 </script>

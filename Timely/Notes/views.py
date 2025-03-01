@@ -574,77 +574,94 @@ def stopSharingNotebook(request, pk):
 
 def startSharingNotebook(request, pk):
     notebook = get_object_or_404(Notebook, id=pk)
-    logined_profile = get_object_or_404(Profile, user=request.user)  # Get logged-in profile
+    logined_profile = get_object_or_404(Profile, user=request.user)  
 
-    # Ensure only the owner can share the notebook
     if notebook.author != logined_profile:
         messages.error(request, "You do not have permission to share this notebook.")
         return redirect("home")
 
-    # Prevent sharing if the notebook is password-protected
     if notebook.is_password_protected:
         messages.error(request, "Remove the password before sharing!")
         return redirect("home")
 
     if request.method == "POST":
-        shared_email = request.POST.get("shared_to_email", "").strip()
-        can_edit = "can_edit" in request.POST  # Checkbox for edit permissions (Boolean)
+        shared_emails = request.POST.get("shared_to_emails", "").strip()
+        can_edit = "can_edit" in request.POST  
 
-        # Get or create a shared notebook entry
         shared_notebook, created = SharedNotebook.objects.get_or_create(
             notebook=notebook,
             defaults={"owner": logined_profile}
         )
 
-        if shared_email:
-            # Try to find the user by email
-            shared_to_user = Profile.objects.filter(email=shared_email).first()
-            if not shared_to_user:
-                messages.error(request, "User with this email does not exist.")
-                return redirect("home")
+        if shared_emails:
+            email_list = [email.strip() for email in shared_emails.split(",") if email.strip()]
+            valid_users = []
+            invalid_emails = []
 
-            shared_notebook.sharedTo.add(shared_to_user)  
-            shared_notebook.can_edit = can_edit  # Assign edit permission
-            
-            notebook.shared_with.add(shared_to_user)  
+            for email in email_list:
+                shared_to_user = Profile.objects.filter(email=email).first()
+                if shared_to_user:
+                    valid_users.append(shared_to_user)
+                else:
+                    invalid_emails.append(email)
 
-            notebook.is_shared = True
-            notebook.save()
-            shared_notebook.save()
+            if valid_users:
+                shared_notebook.sharedTo.add(*valid_users)
+                shared_notebook.can_edit = can_edit
+                notebook.shared_with.add(*valid_users)
+                notebook.is_shared = True
+                notebook.save()
+                shared_notebook.save()
+                messages.success(request, f"Notebook shared successfully with {', '.join([user.email for user in valid_users])}!")
 
-            messages.success(request, f"Notebook shared successfully with {shared_email}!")
+            if invalid_emails:
+                messages.warning(request, f"These emails are invalid: {', '.join(invalid_emails)}")
 
         else:
-            # ✅ Public sharing (no email provided)
-            shared_notebook.sharedTo.clear()  # Remove all specific shared users
-            shared_notebook.can_edit = False  # Make public notebooks non-editable
-            notebook.is_public = True  # ✅ Set notebook to public
-            notebook.is_shared = True  # ✅ Keep it marked as shared
-
-            # ✅ Remove all users from shared_with (since it’s public)
+            shared_notebook.sharedTo.clear()
+            shared_notebook.can_edit = False  
+            notebook.is_public = True  
+            notebook.is_shared = True  
             notebook.shared_with.clear()  
-
             notebook.save()
             shared_notebook.save()
-
             messages.success(request, "Notebook has been made public!")
 
         return redirect("home")
 
     return redirect("home")
 
+
 def fetch_profile_details(request):
-    email = request.GET.get("shared_to_email", "").strip()
+    emails = request.GET.get("shared_to_emails", "").strip()
+    if not emails:
+        return HttpResponse("<div class='alert alert-warning'>Please enter at least one email.</div>")
 
-    if not email:
-        return HttpResponse("<div class='alert alert-warning'>Please enter an email.</div>")
+    email_list = [email.strip() for email in emails.split(",") if email.strip()]
+    profile_info = []
 
-    profile = Profile.objects.filter(email=email).first()
+    for email in email_list:
+        profile = Profile.objects.filter(email=email).first()
+        if profile:
+            profile_info.append(f"<strong>{profile.firstName} {profile.lastName}</strong> ({email})")
+        else:
+            profile_info.append(f"<span class='text-danger'>User not found: {email}</span>")
 
-    if profile:
-        return HttpResponse(f"<div class='alert alert-success'>You are going to share this notebook with <strong>{profile.firstName} {profile.lastName}</strong>.</div>")
-    else:
-        return HttpResponse("<div class='alert alert-danger'>User not found. Please check the email.</div>")
+    return HttpResponse(f"<div class='alert alert-success'>Sharing with: {', '.join(profile_info)}</div>")
+
+
+# def fetch_profile_details(request):
+#     email = request.GET.get("shared_to_email", "").strip()
+
+#     if not email:
+#         return HttpResponse("<div class='alert alert-warning'>Please enter an email.</div>")
+
+#     profile = Profile.objects.filter(email=email).first()
+
+#     if profile:
+#         return HttpResponse(f"<div class='alert alert-success'>You are going to share this notebook with <strong>{profile.firstName} {profile.lastName}</strong>.</div>")
+#     else:
+#         return HttpResponse("<div class='alert alert-danger'>User not found. Please check the email.</div>")
 
 # def shared_notebooks_view(request, pk):
 #     logined_profile = Profile.objects.filter(user=request.user)
