@@ -56,11 +56,11 @@ class SharedNotebook(models.Model):
         if not self.shared_at:
             self.shared_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
         
-        if not self.shareable_link:
-            self.shareable_link = f'sharedNotebooks/'
+        # if not self.shareable_link:
+        #     self.shareable_link = f'sharedNotebooks/'
 
-        if request:
-            messages.success(request, f'Notebook shared successfully! Here is the link to view it: {self.shareable_link}')
+        # if request:
+        #     messages.success(request, f'Notebook shared successfully! Here is the link to view it: {self.shareable_link}')
 
         notebook = self.notebook
         notebook.is_shared = True

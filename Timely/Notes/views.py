@@ -610,6 +610,7 @@ def startSharingNotebook(request, pk):
                 shared_notebook.can_edit = can_edit
                 notebook.shared_with.add(*valid_users)
                 notebook.is_shared = True
+                shared_notebook.shareable_link ='sharedNotebooks/'
                 notebook.save()
                 shared_notebook.save()
                 messages.success(request, f"Notebook shared successfully with {', '.join([user.email for user in valid_users])}!")
@@ -622,7 +623,8 @@ def startSharingNotebook(request, pk):
             shared_notebook.can_edit = False  
             notebook.is_public = True  
             notebook.is_shared = True  
-            notebook.shared_with.clear()  
+            notebook.shared_with.clear()
+            shared_notebook.shareable_link = 'publicNotebooks/'  
             notebook.save()
             shared_notebook.save()
             messages.success(request, "Notebook has been made public!")
