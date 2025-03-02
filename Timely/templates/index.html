@@ -99,26 +99,26 @@
                         {% endif %} {% endcomment %}
                         <a value="{{notebook.id}}"
                             {% if notebook.is_password_protected %}
-                              style="text-decoration: none;" 
+                              style="text-decoration: none;"
                               href="{% url 'verify_password' notebook.id %}"
                             {% else %}
                               href="#{{notebook.title}}"
-                              data-bs-toggle="modal" 
+                              data-bs-toggle="modal"
                               data-bs-target="#example-modal-{{ notebook.id }}"
-                              data-notebook-id="{{ notebook.id }}" 
+                              data-notebook-id="{{ notebook.id }}"
                               class="notebook-title"
                               style="text-decoration: none; color:hsl(216,100%,60%); cursor:pointer;"
                             {% endif %}>
-                            
-                             
-                                
+
+
+
                           {% if notebook.priority < 2 %}
                           <span class="badge rounded-pill" style="background-color: #ff4a4a;margin-right: 1%; font-weight: bold;">
                             {% comment %} <i class="fas fa-arrow-up"></i> {% endcomment %}
                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
                               <path d="M414 321.94L274.22 158.82a24 24 0 00-36.44 0L98 321.94c-13.34 15.57-2.28 39.62 18.22 39.62h279.6c20.5 0 31.56-24.05 18.18-39.62z"/>
                             </svg>
-                              
+
                           {% else %}
                           <span class="badge rounded-pill" style="margin-right: 1%;font-weight: bold;">
                             {% comment %} <i class="fas fa-arrow-down"></i> {% endcomment %}
@@ -170,9 +170,9 @@
         <div class="row m-2">
             <div class="col">
                     <h3>All Notebooks</h3>
-                    
-              
-                      
+
+
+
                 <!-- Spinner Card -->
                 <!-- Horizontally centered using flexbox -->
                 <!-- <div class="m-5 d-flex justify-content-center">
@@ -188,13 +188,13 @@
                           <b style="font-weight: 500;">
                         <a value="{{notebook.id}}"
                               {% if notebook.is_password_protected %}
-                                style="text-decoration: none;" 
+                                style="text-decoration: none;"
                                 href="{% url 'verify_password' notebook.id %}"
                               {% else %}
                                 href="#{{notebook.title}}"
-                                data-bs-toggle="modal" 
+                                data-bs-toggle="modal"
                                 data-bs-target="#example-modal-{{ notebook.id }}"
-                                data-notebook-id="{{ notebook.id }}" 
+                                data-notebook-id="{{ notebook.id }}"
                                 class="notebook-title"
                                 style="text-decoration: none; color:hsl(216,100%,60%); cursor:pointer;"
                               {% endif %}>
@@ -205,7 +205,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
                               <path d="M414 321.94L274.22 158.82a24 24 0 00-36.44 0L98 321.94c-13.34 15.57-2.28 39.62 18.22 39.62h279.6c20.5 0 31.56-24.05 18.18-39.62z"/>
                             </svg>
-                              
+
                           {% else %}
                           <span class="badge rounded-pill" style="margin-right: 1%;font-weight: bold;">
                             {% comment %} <i class="fas fa-arrow-down"></i> {% endcomment %}
@@ -239,7 +239,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
                               <path d="M384 336a63.78 63.78 0 00-46.12 19.7l-148-83.27a63.85 63.85 0 000-32.86l148-83.27a63.8 63.8 0 10-15.73-27.87l-148 83.27a64 64 0 100 88.6l148 83.27A64 64 0 10384 336z"/>
                             </svg>
-                          
+
                           {% endif %}&ensp;
                           {% if notebook.is_public %}
                             <span class="badge bg-success">Public</span>
@@ -254,7 +254,7 @@
                     </ul>
                     </div>
             </div>
-            
+
         </div>
         <div class="row m-2">
           <div class="col">
@@ -300,7 +300,7 @@
           </div>
         </div>
         </div>
-        
+
     </div>
     <div class="tab-pane fade" id="nav-shared" role="tabpanel" aria-labelledby="nav-shared-tab" tabindex="0">
     <div >
@@ -337,9 +337,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item p-3">
               <h5><a href="#{{favourite.title}}" value="{{favourite.id}}" class="notebook-title" data-notebook-id="{{ favourite.id }}" data-bs-toggle="modal" data-bs-target="#example-modal-{{ favourite.id }}">
-                <span class="badge rounded-pill" style="background-color: #ff4a4a;"> 
+                <span class="badge rounded-pill" style="background-color: #ff4a4a;">
                   <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
-                    <path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/></svg> </span>  
+                    <path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/></svg> </span>
                     {{ favourite.title }}</a></h5>
               <!--<p>{{ favourite.body|safe }}</p>-->
               <span class="badge rounded-pill text-bg-dark">At - {{ favourite.updated_at }}</span>
@@ -370,9 +370,9 @@
               </li>
         </ul>
       </div>
-      
+
       {% endfor %}
-      
+
     </div>
   </div> -->
   <div class="tab-pane fade" id="nav-activity" role="tabpanel" aria-labelledby="nav-activity-tab" tabindex="0">
@@ -468,7 +468,7 @@
                   <div class="ps-4 mt-2">
                     <ul class="list-unstyled mb-0" id="notebook-pages-{{ notebook.id }}">
                       {% for page in notebook.page_set.all %}
-                      
+
                       <li class="p-1" data-id="{{ page.id }}">
                         <!-- Drag Icon -->
                       <svg class="drag-handle me-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -541,7 +541,7 @@
           <a href="{% url 'update_notebook' notebook.id %}" class="btn btn-primary">Edit</a>
           <a href="{% url 'generate_pdf' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export PDF</a>
           <a href="{% url 'exportNotebookToJson' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export JSON</a>
-          
+
           {% if notebook.is_password_protected %}
             <a disabled href="" class="btn disabled"><i class="fas fa-share-alt"></i> Notebook is Password Protected</a>
           {% else %}
@@ -550,7 +550,7 @@
             {% else %}
               <!-- <a href="{% url 'startingSharedNotebooks' pk=notebook.id %}" class="btn btn-outline-info"><i class="fas fa-share-alt"></i> Share this Notebook</a> -->
               <a href="" data-bs-toggle="modal" data-bs-target="#shareNotebook-{{ notebook.id }}" class="btn btn-outline-info">Share Notebook</a>
-            {% endif %} 
+            {% endif %}
           {% endif %}
 
           {% if notebook.is_favourite %}
@@ -624,14 +624,14 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <p>Are you sure you want to share the notebook <i class="fas fa-book"></i> "<strong>{{ notebook.title }}</strong>"?</p>
-                    
+
                     <div class="mb-3">
                         <label for="sharedEmails-{{ notebook.id }}" class="form-label">
                             Enter Emails to Share With (Separate multiple emails with commas):
                         </label>
-                        <input type="text" class="form-control" id="sharedEmails-{{ notebook.id }}" 
+                        <input type="text" class="form-control" id="sharedEmails-{{ notebook.id }}"
                                name="shared_to_emails" placeholder="Enter emails, separated by commas"
-                               hx-get="{% url 'fetch_profile_details' %}" 
+                               hx-get="{% url 'fetch_profile_details' %}"
                                hx-trigger="keyup changed delay:500ms"
                                hx-target="#profile-info-{{ notebook.id }}"
                                hx-indicator=".htmx-indicator"
@@ -679,17 +679,17 @@
       let checkboxDiv = document.getElementById("editPermissionBox-" + notebookId);
 
       if (emailInput.value.trim() === "") {
-          checkboxDiv.style.display = "none"; 
+          checkboxDiv.style.display = "none";
       } else {
-          checkboxDiv.style.display = "block"; 
+          checkboxDiv.style.display = "block";
       }
   }
 
   document.body.addEventListener("htmx:afterSwap", function(event) {
-      let targetId = event.detail.elt.id; 
+      let targetId = event.detail.elt.id;
       if (targetId.startsWith("profile-info-")) {
           let targetElement = document.getElementById(targetId);
-          targetElement.style.display = "block"; 
+          targetElement.style.display = "block";
       }
   });
 
@@ -900,7 +900,7 @@
             <li class="list-group-item p-3" style="color:black;background-color: #f9d5e5; border-left: 5px solid #f28b82; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h5>
                       {% if remainder.is_over %}
-                      <a href="{% url 'deleteRemainder' remainder.id %}"><span class="badge rounded-pill" style="background-color: #f28b82;"> 
+                      <a href="{% url 'deleteRemainder' remainder.id %}"><span class="badge rounded-pill" style="background-color: #f28b82;">
                         {% comment %} <i class="fas fa-trash" style="color:white;"></i> {% endcomment %}
                         <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
                           <path d="M296 64h-80a7.91 7.91 0 00-8 8v24h96V72a7.91 7.91 0 00-8-8z" fill="none"/><path d="M432 96h-96V72a40 40 0 00-40-40h-80a40 40 0 00-40 40v24H80a16 16 0 000 32h17l19 304.92c1.42 26.85 22 47.08 48 47.08h184c26.13 0 46.3-19.78 48-47l19-305h17a16 16 0 000-32zM192.57 416H192a16 16 0 01-16-15.43l-8-224a16 16 0 1132-1.14l8 224A16 16 0 01192.57 416zM272 400a16 16 0 01-32 0V176a16 16 0 0132 0zm32-304h-96V72a7.91 7.91 0 018-8h80a7.91 7.91 0 018 8zm32 304.57A16 16 0 01320 416h-.58A16 16 0 01304 399.43l8-224a16 16 0 1132 1.14z"/>
@@ -917,7 +917,7 @@
                         <path d="M440.08 341.31c-1.66-2-3.29-4-4.89-5.93-22-26.61-35.31-42.67-35.31-118 0-39-9.33-71-27.72-95-13.56-17.73-31.89-31.18-56.05-41.12a3 3 0 01-.82-.67C306.6 51.49 282.82 32 256 32s-50.59 19.49-59.28 48.56a3.13 3.13 0 01-.81.65c-56.38 23.21-83.78 67.74-83.78 136.14 0 75.36-13.29 91.42-35.31 118-1.6 1.93-3.23 3.89-4.89 5.93a35.16 35.16 0 00-4.65 37.62c6.17 13 19.32 21.07 34.33 21.07H410.5c14.94 0 28-8.06 34.19-21a35.17 35.17 0 00-4.61-37.66zM256 480a80.06 80.06 0 0070.44-42.13 4 4 0 00-3.54-5.87H189.12a4 4 0 00-3.55 5.87A80.06 80.06 0 00256 480z"/>
                       </svg>
                       {{ remainder.alert_time }}</span>
-                 
+
               {% comment %} {% if remainder.is_completed == True or remainder.is_over == True %}
                 <a class="btn btn-link" href="{% url 'markReminderUnComplete' remainder.pk %}" role="button"><i class="fas fa-xmark"></i> Mark as Not Compelete</a>
                 {% else %}
@@ -931,7 +931,7 @@
               {% endif %}
               <a class="btn btn-link " href="{% url 'update_reminder' remainder_pk=remainder.pk %}" role="button"> Edit Reminder</a>
 
-                      
+
                 </li>
             {% else %}
             <li class="list-group-item p-3">
@@ -945,14 +945,14 @@
                 {% else %}
                 <a class="btn btn-outline-primary" href="{% url 'markReminderComplete' remainder.pk %}" role="button"><i class="fas fa-check"></i> Mark as Compelete</a>
               {% endif %} {% endcomment %}
-              
+
               {% if remainder.is_favourite == True %}
               <a class="btn btn-link " href="{% url 'markReminderUnFavourite' remainder.pk %}" role="button"> Mark as Not Favourite</a>
               {% else %}
               <a class="btn btn-outline-primary" href="{% url 'markReminderFavourite' remainder.pk %}" role="button"> Mark as Favourite</a>
               {% endif %}
               <a class="btn btn-link " href="{% url 'update_reminder' remainder.pk %}" role="button"> Edit Reminder</a>
-                
+
             </li>
             {% endif %}
             {% empty %}
@@ -1010,7 +1010,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 <script>
 document.body.addEventListener("htmx:afterRequest", function(event) {
-    
+
 
     if (!event.detail || !event.detail.xhr) {
         console.error("Invalid event details. No response.");
@@ -1022,7 +1022,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
 
     try {
         let data = JSON.parse(responseText);
-        
+
 
         // Get the correct notebook ID from the event target
         let notebookElement = event.detail.target;
@@ -1037,7 +1037,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
         let spinner = document.getElementById("loading-spinner-" + notebookId);
 
         if (target) {
-            
+
             spinner.style.display = "none";
             target.innerHTML = data.body;
         } else {
@@ -1048,7 +1048,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
     }
 });
 document.body.addEventListener("htmx:afterRequest", function(event) {
-    
+
 
     if (!event.detail || !event.detail.xhr) {
         console.error("Invalid event details. No response.");
@@ -1060,7 +1060,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
 
     try {
         let data = JSON.parse(responseText);
-        
+
 
         // Get the correct notebook ID from the event target
         let notebookElement = event.detail.target;
@@ -1075,7 +1075,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
         let spinner = document.getElementById("loading-spinner-page-" + notebookId);
 
         if (target) {
-            
+
             target.innerHTML = data.body;
             spinner.style.display = "none";
         } else {
@@ -1086,7 +1086,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
     }
 });
 document.body.addEventListener("htmx:afterRequest", function(event) {
-    
+
 
     if (!event.detail || !event.detail.xhr) {
         console.error("Invalid event details. No response.");
@@ -1098,7 +1098,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
 
     try {
         let data = JSON.parse(responseText);
-        
+
 
         // Get the correct notebook ID from the event target
         let notebookElement = event.detail.target;
@@ -1113,7 +1113,7 @@ document.body.addEventListener("htmx:afterRequest", function(event) {
         let spinner = document.getElementById("loading-spinner-subpage-" + notebookId);
 
         if (target) {
-            
+
             target.innerHTML = data.body;
             spinner.style.display = "none";
         } else {
@@ -1138,7 +1138,7 @@ document.addEventListener("DOMContentLoaded", function () {
             onEnd: function (evt) {
                 let notebookId = pageList.id.split("-").pop(); // Extract notebook ID
                 let pages = [];
-                
+
                 pageList.querySelectorAll("li[data-id]").forEach((item, index) => {
                     pages.push({ id: item.dataset.id, order: index + 1 }); // Assign new order
                 });
