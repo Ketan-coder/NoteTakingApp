@@ -26,9 +26,10 @@ def updateUser(request):
             messages.success(request, 'Profile updated successfully')
             return redirect('home')
     context = {
-        'form':form
+        'form':form,
+        'p_form':p_form
     }
-    return render(request, 'userupdate.html', context)
+    return render(request, 'new_user_update.html', context)
 
 def login_form(request):
     context = {
