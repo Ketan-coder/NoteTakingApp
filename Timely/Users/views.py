@@ -1,11 +1,13 @@
 from datetime import datetime
-
+import email
+import uuid
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import ListView
 from Notes.models import Activity
@@ -15,25 +17,56 @@ from .models import Profile
 
 # Create your views here.
 
-
+@login_required
 def updateUser(request):
     user = request.user
-    profile = user.profile
-    form = UserRegistrationForm(instance=profile)
-    p_form = ProfileForm(instance=profile)
-    if request.method == "POST":
-        form = UserRegistrationForm(request.POST, instance=profile)
-        if form.is_valid() and p_form.is_valid():
-            p_form.save()
-            form.save()
-            Activity.objects.create(
-                author=user, title="Updated Profile", body="Updated Profile"
-            )
-            messages.success(request, "Profile updated successfully")
-            return redirect("home")
-    context = {"form": form, "p_form": p_form}
-    return render(request, "new_user_update.html", context)
 
+    # Ensure email is verified before allowing profile update
+    if not user.is_active:
+        messages.error(request, "You must verify your email before updating your profile.")
+        return redirect("email_confirmation_pending")
+
+    profile = Profile.objects.get(user=user)
+
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        bio = request.POST.get("bio", "").strip()
+
+        # ✅ Basic Validation
+        if User.objects.filter(username=username).exclude(id=user.id).exists():
+            messages.error(request, "❌ Username is already taken.")
+            return redirect("update_user")
+
+        if User.objects.filter(email=email).exclude(id=user.id).exists():
+            messages.error(request, "❌ Email is already in use.")
+            return redirect("update_user")
+
+        # ✅ Save Updates
+        user.username = username
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+
+        profile.bio = bio
+        profile.firstName = first_name
+        profile.lastName = last_name
+        profile.email = email
+        profile.save()
+
+        # ✅ Log Activity
+        Activity.objects.create(
+            author=user, title="Updated Profile", body="Updated Profile"
+        )
+
+        messages.success(request, "Profile updated successfully")
+        return redirect("home")
+
+    context = {"user": user, "profile": profile}
+    return render(request, "user_update.html", context)
 
 def login_form(request):
     context = {"title": "Login"}
@@ -89,18 +122,6 @@ def registeration_form(request):
     return render(request, "newuser.html", context)
 
 
-import uuid
-from datetime import datetime
-
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import login
-from django.contrib.auth.models import User
-from django.core.mail import EmailMultiAlternatives
-from django.shortcuts import get_object_or_404, redirect, render
-
-from .models import Profile
-
 
 def register_view(request):
     if request.method == "POST":
@@ -112,67 +133,69 @@ def register_view(request):
             messages.error(request, "Passwords do not match.")
             return render(request, "register.html", {"title": "Register"})
 
-        if (
-            User.objects.filter(email=email).exists()
-            or Profile.objects.filter(email=email).exists()
-        ):
-            messages.error(request, "Email is already registered.")
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user:
+            messages.error(request, "Email is already registered. Try logging in.")
             return render(request, "register.html", {"title": "Register"})
 
-        # Create user but keep inactive
+        # ✅ Step 1: Create User First
         user = User.objects.create_user(username=email, email=email, password=password)
-        user.is_active = False
+        user.is_active = False  # User is inactive until email confirmation
         user.save()
 
-        # Create Profile with email confirmation token
-        profile = Profile.objects.create(
-            user=user, email=email, email_confirmation_token=uuid.uuid4()
-        )
+        profile = Profile.objects.get(user=user)
+        profile.email_confirmation_token = uuid.uuid4()
+        profile.save()
 
-        # Send confirmation email
-        confirmation_link = (
-            f"{settings.SITE_URL}/confirm-email/{profile.email_confirmation_token}/"
-        )
+        # ✅ Step 4: Send Confirmation Email
+        confirmation_link = f"{settings.SITE_URL}/accounts/confirm-email/{profile.email_confirmation_token}/"
+        print(confirmation_link)
         subject = "Confirm Your Timely Account"
         from_email = "codingfoxblogs@gmail.com"
         to = user.email
         text_content = "Please confirm your email."
-        html_content = f"""
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>Email Confirmation</title>
-            </head>
-            <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
-                <h2 style="color: #0076d1;">Confirm Your Email for Timely</h2>
-                <p>Hello,</p>
-                <p>Thank you for registering with Timely. Please click the link below to confirm your email address:</p>
-                <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm Email</a></p>
-                <p>If you did not sign up, please ignore this email.</p>
-            </body>
-            </html>
-            """
+        html_content = f'''
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Email Confirmation</title>
+        </head>
+        <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
+            <h2 style="color: #0076d1;">Confirm Your Email for Timely</h2>
+            <p>Hello,</p>
+            <p>Thank you for registering with Timely. Please click the link below to confirm your email address:</p>
+            <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm Email</a></p>
+            <p>If you did not sign up, please ignore this email.</p>
+        </body>
+        </html>
+        '''
         msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
         msg.attach_alternative(html_content, "text/html")
         msg.send()
 
-        messages.success(
-            request,
-            "Registration successful. Check your email to confirm your account.",
-        )
-        return redirect("email_pending")
+        messages.success(request, "Registration successful. Check your email to confirm your account.")
+        return redirect("email_confirmation_pending")  # ✅ Fixed the URL name
 
     return render(request, "register.html", {"title": "Register"})
 
 
 def email_confirmation_view(request, token):
-    profile = get_object_or_404(Profile, email_confirmation_token=token)
 
-    # Activate user and clear token
+    try:
+        token_uuid = uuid.UUID(token)  # ✅ Convert token from str to UUID
+    except ValueError:
+        raise Http404("Invalid Token Format")  # If the token is not a valid UUID
+
+    try:
+        profile = Profile.objects.get(email_confirmation_token=token_uuid)  # ✅ Query with UUID
+    except Profile.DoesNotExist:
+        raise Http404("Invalid or Expired Token")  
+
+    # Activate user and remove token
     profile.user.is_active = True
     profile.user.save()
-    profile.email_confirmation_token = None
+    profile.email_confirmation_token = None  # Remove token after activation
     profile.save()
 
     login(request, profile.user)
@@ -200,9 +223,85 @@ def profile_setup_view(request):
         user.last_name = last_name
         user.save()
 
-        Profile.objects.filter(user=user).update(bio=bio)
+        Profile.objects.filter(user=user).update(bio=bio, firstName=first_name, lastName=last_name, email=user.email)
 
         messages.success(request, "Profile updated successfully.")
-        return redirect("dashboard")
+        return redirect("home")
 
     return render(request, "profile_setup.html", {"title": "Complete Profile"})
+
+def check_username(request):
+    username = request.GET.get("username", "").strip()
+    
+    if not username:
+        return HttpResponse('<span style="color: red;">❌ Username cannot be empty</span>')
+
+    if User.objects.filter(username=username).exists():
+        return HttpResponse('<span style="color: red;">❌ Username is already taken</span>')
+    
+    return HttpResponse('<span style="color: green;">✅ Username is available</span>')
+
+
+@login_required
+def update_email_request(request):
+    if request.method == "POST":
+        new_email = request.POST.get("new_email").strip()
+
+        if User.objects.filter(email=new_email).exists():
+            messages.error(request, "❌ This email is already in use.")
+            return redirect("update_user")
+
+        # Generate verification token
+        profile = request.user.profile
+        profile.email_confirmation_token = uuid.uuid4()
+        profile.save()
+
+        # Send email verification link
+        confirmation_link = f"{settings.SITE_URL}/confirm-new-email/{profile.email_confirmation_token}/{new_email}/"
+        subject = "Confirm Your New Email"
+        from_email = "codingfoxblogs@gmail.com"
+        to = new_email
+        text_content = "Please confirm your new email."
+        html_content = f'''
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Email Confirmation</title>
+        </head>
+        <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
+            <h2 style="color: #0076d1;">Confirm Your New Email</h2>
+            <p>Hello,</p>
+            <p>Click the link below to verify and update your email address:</p>
+            <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm New Email</a></p>
+            <p>If you did not request this change, please ignore this email.</p>
+        </body>
+        </html>
+        '''
+        msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+        msg.attach_alternative(html_content, "text/html")
+        msg.send()
+
+        messages.success(request, "Verification email sent. Please check your new email.")
+        return redirect("update_user")
+
+    return redirect("update_user")
+
+@login_required
+def confirm_new_email(request, token, new_email):
+    profile = get_object_or_404(Profile, email_confirmation_token=token)
+
+    # Ensure the logged-in user is updating their email
+    if profile.user != request.user:
+        messages.error(request, "❌ Unauthorized request.")
+        return redirect("home")
+
+    # Update email and clear token
+    profile.user.email = new_email
+    profile.user.save()
+    profile.email = new_email
+    profile.email_confirmation_token = None
+    profile.save()
+
+    messages.success(request, "✅ Your email has been updated successfully!")
+    return redirect("update_user")

@@ -210,14 +210,14 @@
                               {% endif %}>
 
                           {% if notebook.priority < 2 %}
-                          <span class="badge rounded-pill" style="background-color: #ff4a4a;margin-right: 1%; font-weight: bold;">
+                          <span class="badge rounded-pill" style="background-color: #ff4a4a;margin-right: 1%; font-weight: bold;" data-bs-toggle="tooltip" data-bs-title="Higher Priority Notebook">
                             {% comment %} <i class="fas fa-arrow-up"></i> {% endcomment %}
                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
                               <path d="M414 321.94L274.22 158.82a24 24 0 00-36.44 0L98 321.94c-13.34 15.57-2.28 39.62 18.22 39.62h279.6c20.5 0 31.56-24.05 18.18-39.62z"/>
                             </svg>
 
                           {% else %}
-                          <span class="badge rounded-pill" style="margin-right: 1%;font-weight: bold;">
+                          <span class="badge rounded-pill" style="margin-right: 1%;font-weight: bold;" data-bs-toggle="tooltip" data-bs-title="This notebook has a lower priority">
                             {% comment %} <i class="fas fa-arrow-down"></i> {% endcomment %}
                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
                               <path d="M98 190.06l139.78 163.12a24 24 0 0036.44 0L414 190.06c13.34-15.57 2.28-39.62-18.22-39.62h-279.6c-20.5 0-31.56 24.05-18.18 39.62z"/>
@@ -225,19 +225,19 @@
                           {% endif %}
                           </span>
                           {% if notebook.is_accessed_recently %}
-                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;" data-bs-toggle="tooltip" data-bs-title="This notebook was accessed recently">
                                <path d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208 208-93.31 208-208S370.69 48 256 48zm120 182.15a8.62 8.62 0 01-8.62 8.62h-59.54a8.61 8.61 0 01-6.09-14.71l22.17-22.17-5.6-6.51a87.38 87.38 0 10-62.94 148 87.55 87.55 0 0082.42-58.25A16 16 0 11368 295.8a119.4 119.4 0 11-112.62-159.18 118.34 118.34 0 0186.36 36.95l.56.62 4.31 5 14.68-14.68a8.44 8.44 0 016-2.54 8.61 8.61 0 018.68 8.63z"/>
                               </svg>
                               {% endif %}
                           {% if notebook.is_favourite %}
                             {% comment %} <i class="fas fa-star text-warning"></i> {% endcomment %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#ff0" style="width: 15px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#ff0" style="width: 15px;" data-bs-toggle="tooltip" data-bs-title="This notebook is a favorite">
                               <path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/>
                             </svg>
                           {% endif %}
                           {% if notebook.is_password_protected %}
                             {% comment %} <i class="fas fa-lock text-danger"></i> {% endcomment %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#f00" style="width: 15px;" data-bs-toggle="tooltip" data-bs-title="This notebook is password protected">
                               <path d="M368 192h-16v-80a96 96 0 10-192 0v80h-16a64.07 64.07 0 00-64 64v176a64.07 64.07 0 0064 64h224a64.07 64.07 0 0064-64V256a64.07 64.07 0 00-64-64zm-48 0H192v-80a64 64 0 11128 0z"/>
                             </svg>
                             {% comment %} <i class="fas fa-link"></i> {% endcomment %}
@@ -246,13 +246,13 @@
                             </svg>                          {% endif %}
                           {% if notebook.is_shared %}
                             {% comment %} <i class="fas fa-share-alt"></i> {% endcomment %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#00f" style="width: 15px;" data-bs-toggle="tooltip" data-bs-title="This notebook is shared">
                               <path d="M384 336a63.78 63.78 0 00-46.12 19.7l-148-83.27a63.85 63.85 0 000-32.86l148-83.27a63.8 63.8 0 10-15.73-27.87l-148 83.27a64 64 0 100 88.6l148 83.27A64 64 0 10384 336z"/>
                             </svg>
 
                           {% endif %}&ensp;
                           {% if notebook.is_public %}
-                            <span class="badge bg-success">Public</span>
+                            <span class="badge bg-success" data-bs-toggle="tooltip" data-bs-title="Open to Anyone on this Platform">Public</span>
                           {% endif%}&ensp;
                           {% comment %} <i class="fas fa-book"></i>   {% endcomment %}
 

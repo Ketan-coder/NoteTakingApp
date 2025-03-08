@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    {{ title }}
+    Timely | {{ title }}
 {% endblock title %}
 
 {% block body %}
@@ -20,10 +20,20 @@
                                 <p style="color: red;">{{ message }}</p>
                             {% endfor %}
                         {% endif %}
+                        
+                        <!-- Username Field with HTMX -->
                         <div class="form-group">
                             <label>Username</label>
-                            <input type="text" name="username" class="form-control" required>
+                            <input type="text" name="username" id="username" class="form-control"
+                                hx-get="{% url 'check_username' %}" 
+                                hx-trigger="keyup delay:100ms"
+                                hx-target="#username-check"
+                                hx-indicator=".htmx-indicator"
+                                required>
+                            <div id="username-check" class="mt-2"></div>
+                            <div class="htmx-indicator">Checking...</div>
                         </div>
+
                         <div class="form-group">
                             <label>First Name</label>
                             <input type="text" name="first_name" class="form-control">

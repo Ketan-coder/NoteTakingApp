@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
 from pathlib import Path
-from tkinter import E
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,6 +30,11 @@ DEBUG = os.getenv('DEBUG')
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost','timely.pythonanywhere.com']
 
+SITE_URL = ""
+if DEBUG:
+    SITE_URL = "http://127.0.0.1:8000"
+else:
+    SITE_URL = "https://timely.pythonanywhere.com"
 
 # Application definition
 
@@ -193,3 +197,6 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# For Testing
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
