@@ -1,0 +1,79 @@
+<div class="d-flex justify-content-between align-items-center">
+    <h3>All Activity</h3>
+    <form id="delete-form" hx-post="{% url 'delete_activity_request' %}"
+        hx-trigger="click"
+        hx-target="#delete-message"
+        hx-confirm="Are you sure you want to request deletion of all activity logs?">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+            Request Activity Deletion
+        </button>
+    </form>
+</div>
+
+<!-- Message will be shown here after deletion -->
+<div id="delete-message" class="mt-2"></div>
+
+<div id="activity-container">
+    {% for activity in activities %}
+    <div class="card m-2">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item p-3">
+                <h5>
+                    <span class="badge rounded-pill" style="background-color: #ff4a4a;">
+                        <i class="fas fa-exclamation" style="color:white;"></i>
+                    </span>
+                    {{ activity.title }}
+                </h5>
+                <p>{{ activity.body }}</p>
+                <span class="badge rounded-pill text-bg-dark">At - {{ activity.updated_at }}</span>
+            </li>
+        </ul>
+    </div>
+    {% empty %}
+    <p class="text-muted">No activity available.</p>
+    {% endfor %}
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center">
+            {% if activities.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" hx-get="{% url 'activity_page' %}?page=1" hx-target="#activity-container" hx-push-url="true">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" hx-get="{% url 'activity_page' %}?page={{ activities.previous_page_number }}" hx-target="#activity-container" hx-push-url="true">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in activities.paginator.page_range %}
+                {% if activities.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" hx-get="{% url 'activity_page' %}?page={{ num }}" hx-target="#activity-container" hx-push-url="true">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if activities.has_next %}
+                <li class="page-item">
+                    <a class="page-link" hx-get="{% url 'activity_page' %}?page={{ activities.next_page_number }}" hx-target="#activity-container" hx-push-url="true">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" hx-get="{% url 'activity_page' %}?page={{ activities.paginator.num_pages }}" hx-target="#activity-container" hx-push-url="true">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>

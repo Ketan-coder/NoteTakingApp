@@ -53,4 +53,8 @@ urlpatterns = [
     path("todo/toggle/<int:todo_id>/", login_required(views.toggle_todo), name="toggle_todo"),
     path("todo/delete/<int:todo_id>/", login_required(views.delete_todo), name="delete_todo"),
     path("fetch-profile/", login_required(views.fetch_profile_details), name="fetch_profile_details"),
+
+    path("activity-loader/", login_required(views.activity_loader), name="activity_loader"),
+    path("activity-page/", login_required(views.activity_page), name="activity_page"),
+    path("delete-activity-request/", login_required(views.delete_activity_request), name="delete_activity_request"),
 ]

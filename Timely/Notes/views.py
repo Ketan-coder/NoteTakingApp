@@ -24,6 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 # Uncomment when done with lock
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # # Create your views here.
 # Cache duration (in seconds)
 # CACHE_TIMEOUT = 120  # 2 minutes
@@ -1332,3 +1333,36 @@ def notebook_password_reset_page(request, pk):
     context = {}
     context['notebook'] = notebook
     return render(request, 'notebook_password_reset_page.html', context)
+
+def activity_loader(request):
+    """Loads the HTMX-powered activity page"""
+    return render(request, "activities/activity_loader.html")
+
+def activity_page(request):
+    """Fetches activity content asynchronously"""
+    logged_in_profile = Profile.objects.get(user=request.user)
+    activities = Activity.objects.filter(author=logged_in_profile).order_by("-updated_at")
+    
+    paginator = Paginator(activities, 10)
+    page_number = request.GET.get("page")
+
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)  # Default to first page
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)  
+
+    return render(request, "activities/activity_history.html", {"activities": page_obj})
+
+def delete_activity_request(request):
+    """Handles the activity deletion request"""
+    if request.method == "POST":
+        logged_in_profile = Profile.objects.get(user=request.user)
+        Activity.objects.filter(author=logged_in_profile).delete()
+        messages.success(request, "✅ All activity logs have been deleted successfully!")
+
+        # Return a message response (HTMX will insert this into #delete-message)
+        return HttpResponse('<div class="alert alert-success">✅ All activity logs have been deleted successfully!</div>')
+
+    return HttpResponse('<div class="alert alert-danger">❌ Invalid request.</div>', status=400)
