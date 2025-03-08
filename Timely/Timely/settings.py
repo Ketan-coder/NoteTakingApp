@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
 from pathlib import Path
+from tkinter import E
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -185,3 +186,10 @@ TEMPLATES = [
 
 
 X_FRAME_OPTIONS = 'ALLOW-FROM https://timely.pythonanywhere.com/'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
