@@ -11,7 +11,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import ListView
 from Notes.models import Activity
-from Timely.Notes.utils import send_email
+from Notes.utils import send_email
 
 from .forms import ProfileForm, UserRegistrationForm
 from .models import Profile
