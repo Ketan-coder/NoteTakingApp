@@ -1,12 +1,15 @@
-from django.db import models
+import uuid
+
 from django.contrib.auth.models import User
+from django.db import models
+from django.db.models.signals import post_save
 # from ckeditor.fields import RichTextField
 from django.dispatch import receiver
-from django.db.models.signals import post_save
-import uuid
+
+
 # Create your models here.
 class Profile(models.Model):
-    user =models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     firstName = models.CharField(max_length=150)
     lastName = models.CharField(max_length=150)
     email = models.EmailField(max_length=150)
