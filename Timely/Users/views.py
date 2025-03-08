@@ -11,6 +11,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import ListView
 from Notes.models import Activity
+from Timely.Notes.utils import send_email
 
 from .forms import ProfileForm, UserRegistrationForm
 from .models import Profile
@@ -77,16 +78,24 @@ def login_form(request):
         if user is not None:
             login(request, user)
             messages.success(request, "Login successful")
-            subject, from_email, to = (
-                "Login Alert",
-                "codingfoxblogs@gmail.com",
-                f"{user.email}",
+            send_email(
+                to_email=user.email,
+                subject="Login Alert",
+                title="Login Alert Notification",
+                body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please reset your password to secure your account!.",
+                anchor_link="https://codingfox.pythonanywhere.com/users/password-reset/",
+                anchor_text="Reset Password"
             )
-            text_content = "This is an important message."
-            html_content = f'<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">\n<head><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200&display=swap" rel="stylesheet">\n<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><title></title></head<body style="margin:0;padding:0;font-family:"Poppins",Arial,sans-serif;"><table role="presentation" style="width:100%;border-collapse:collapse;border:0;border-spacing:0;background:#ffffff;"><tr><td align="center" style="padding:0;"><table role="presentation" style="width:602px;border-collapse:collapse;border:1px solid #cccccc;border-spacing:0;text-align:left;"><tr><td align="center" style="padding:40px 0 30px 0;background:#efefef;"><h1>Timely</h1></td></tr><tr><td style="padding:36px 30px 42px 30px;"><table role="presentation" style="width:100%;border-collapse:collapse;border:0;border-spacing:0;"><tr><td style="padding:0 0 36px 0;color:#153643;"><h1 style="font-size:24px;margin:0 0 20px 0;font-family:Arial,sans-serif;">Login Alert Mail</h1><p style="margin:0 0 12px 0;font-size:16px;line-height:24px;font-family:Arial,sans-serif;">This is to tell you that your account with username: {username} signing in at {datetime.now()}, If this is not you please consider changing your password immediately!</p><h3 style="margin:0;line-height:24px;font-family:Arial,sans-serif;"><a href="https://codingfox.pythonanywhere.com/users/password-reset/" style="padding: 1%; background-color: #0076d1; color: white;text-decoration: none;">Reset Password!</a></h3><br><p>Please do not reply to this email address, Mail me here: <a href="mailto:ketanv288@gmail.com" style="background-color: transparent; color: #0076d1;text-decoration: none;">Mail Me!</a></p></td></tr></table></body></html>'
-            msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
+            # subject, from_email, to = (
+            #     "Login Alert",
+            #     "codingfoxblogs@gmail.com",
+            #     f"{user.email}",
+            # )
+            # text_content = "This is an important message."
+            # html_content = f'<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">\n<head><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200&display=swap" rel="stylesheet">\n<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><title></title></head<body style="margin:0;padding:0;font-family:"Poppins",Arial,sans-serif;"><table role="presentation" style="width:100%;border-collapse:collapse;border:0;border-spacing:0;background:#ffffff;"><tr><td align="center" style="padding:0;"><table role="presentation" style="width:602px;border-collapse:collapse;border:1px solid #cccccc;border-spacing:0;text-align:left;"><tr><td align="center" style="padding:40px 0 30px 0;background:#efefef;"><h1>Timely</h1></td></tr><tr><td style="padding:36px 30px 42px 30px;"><table role="presentation" style="width:100%;border-collapse:collapse;border:0;border-spacing:0;"><tr><td style="padding:0 0 36px 0;color:#153643;"><h1 style="font-size:24px;margin:0 0 20px 0;font-family:Arial,sans-serif;">Login Alert Mail</h1><p style="margin:0 0 12px 0;font-size:16px;line-height:24px;font-family:Arial,sans-serif;">This is to tell you that your account with username: {username} signing in at {datetime.now()}, If this is not you please consider changing your password immediately!</p><h3 style="margin:0;line-height:24px;font-family:Arial,sans-serif;"><a href="https://codingfox.pythonanywhere.com/users/password-reset/" style="padding: 1%; background-color: #0076d1; color: white;text-decoration: none;">Reset Password!</a></h3><br><p>Please do not reply to this email address, Mail me here: <a href="mailto:ketanv288@gmail.com" style="background-color: transparent; color: #0076d1;text-decoration: none;">Mail Me!</a></p></td></tr></table></body></html>'
+            # msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+            # msg.attach_alternative(html_content, "text/html")
+            # msg.send()
             return redirect("home")
         else:
             messages.error(request, f"Account Does Not Exists with {username}")
@@ -149,30 +158,38 @@ def register_view(request):
 
         # ✅ Step 4: Send Confirmation Email
         confirmation_link = f"{settings.SITE_URL}/accounts/confirm-email/{profile.email_confirmation_token}/"
+        send_email(
+            to_email=user.email,
+            subject="Confirm Your Timely Account",
+            title="Complete Your Registration",
+            body="Thank you for registering! Please confirm your email by clicking the button below.",
+            anchor_link=confirmation_link,
+            anchor_text="Confirm Email"
+        )
         print(confirmation_link)
-        subject = "Confirm Your Timely Account"
-        from_email = "codingfoxblogs@gmail.com"
-        to = user.email
-        text_content = "Please confirm your email."
-        html_content = f'''
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Email Confirmation</title>
-        </head>
-        <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
-            <h2 style="color: #0076d1;">Confirm Your Email for Timely</h2>
-            <p>Hello,</p>
-            <p>Thank you for registering with Timely. Please click the link below to confirm your email address:</p>
-            <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm Email</a></p>
-            <p>If you did not sign up, please ignore this email.</p>
-        </body>
-        </html>
-        '''
-        msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
-        msg.attach_alternative(html_content, "text/html")
-        msg.send()
+        # subject = "Confirm Your Timely Account"
+        # from_email = "codingfoxblogs@gmail.com"
+        # to = user.email
+        # text_content = "Please confirm your email."
+        # html_content = f'''
+        # <html lang="en">
+        # <head>
+        #     <meta charset="UTF-8">
+        #     <meta name="viewport" content="width=device-width, initial-scale=1">
+        #     <title>Email Confirmation</title>
+        # </head>
+        # <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
+        #     <h2 style="color: #0076d1;">Confirm Your Email for Timely</h2>
+        #     <p>Hello,</p>
+        #     <p>Thank you for registering with Timely. Please click the link below to confirm your email address:</p>
+        #     <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm Email</a></p>
+        #     <p>If you did not sign up, please ignore this email.</p>
+        # </body>
+        # </html>
+        # '''
+        # msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+        # msg.attach_alternative(html_content, "text/html")
+        # msg.send()
 
         messages.success(request, "Registration successful. Check your email to confirm your account.")
         return redirect("email_confirmation_pending")  # ✅ Fixed the URL name
