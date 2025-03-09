@@ -1,30 +1,30 @@
-from datetime import datetime
 import email
 import uuid
+from datetime import datetime
+
 from django.conf import settings
-from Timely import settings as project_settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+# Create your views here.
+from django.contrib.auth.views import (PasswordResetCompleteView,
+                                       PasswordResetConfirmView,
+                                       PasswordResetDoneView,
+                                       PasswordResetView)
 from django.core.mail import EmailMultiAlternatives
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 from django.views.generic import ListView
 from Notes.models import Activity
 from Notes.utils import send_email
 
+from Timely import settings as project_settings
+
 from .forms import ProfileForm, UserRegistrationForm
 from .models import Profile
 
-# Create your views here.
-from django.contrib.auth.views import (
-    PasswordResetView, 
-    PasswordResetDoneView, 
-    PasswordResetConfirmView, 
-    PasswordResetCompleteView
-)
-from django.urls import reverse_lazy
 
 # ✅ Request Password Reset (User submits email)
 class CustomPasswordResetView(PasswordResetView):
@@ -33,14 +33,17 @@ class CustomPasswordResetView(PasswordResetView):
     subject_template_name = "users/password_reset_subject.txt"
     success_url = reverse_lazy("password_reset_done")
 
+
 # ✅ Password Reset Done (Email sent confirmation page)
 class CustomPasswordResetDoneView(PasswordResetDoneView):
     template_name = "users/password_reset_done.html"
+
 
 # ✅ Password Reset Confirm (User sets new password)
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     template_name = "users/password_reset_confirm.html"
     success_url = reverse_lazy("password_reset_complete")
+
 
 # ✅ Password Reset Complete (Password successfully changed)
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
@@ -53,17 +56,19 @@ def updateUser(request):
 
     # Ensure email is verified before allowing profile update
     if not user.is_active:
-        messages.error(request, "You must verify your email before updating your profile.")
+        messages.error(
+            request, "You must verify your email before updating your profile."
+        )
         return redirect("email_confirmation_pending")
 
     profile = Profile.objects.get(user=user)
 
     if request.method == "POST":
-        username:str = request.POST.get("username", "").strip() or user.username
-        email:str = request.POST.get("email", "").strip() or user.email
-        first_name:str = request.POST.get("first_name", "").strip()
-        last_name:str = request.POST.get("last_name", "").strip()
-        bio:str = request.POST.get("bio", "").strip()
+        username: str = request.POST.get("username", "").strip() or user.username
+        email: str = request.POST.get("email", "").strip() or user.email
+        first_name: str = request.POST.get("first_name", "").strip()
+        last_name: str = request.POST.get("last_name", "").strip()
+        bio: str = request.POST.get("bio", "").strip()
 
         # Check if username exists in User or Profile (excluding the current user)
         if username and (
@@ -74,8 +79,8 @@ def updateUser(request):
 
         # Check if email exists in User or Profile (excluding the current user)
         if email and (
-            User.objects.filter(email=email).exclude(pk=user.pk).exists() or 
-            Profile.objects.filter(email=email).exclude(pk=profile.pk).exists()
+            User.objects.filter(email=email).exclude(pk=user.pk).exists()
+            or Profile.objects.filter(email=email).exclude(pk=profile.pk).exists()
         ):
             messages.error(request, "❌ Email is already in use.")
             return redirect("update_user")
@@ -105,7 +110,7 @@ def updateUser(request):
                 title="Profile Update Alert Notification",
                 body=f"Your profile with username '{user.username}' was updated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please log in to secure your account!.",
                 anchor_link="https://timely.pythonanywhere.com/accounts/login/",
-                anchor_text="Login"
+                anchor_text="Login",
             )
 
         messages.success(request, "Profile updated successfully")
@@ -113,6 +118,7 @@ def updateUser(request):
 
     context = {"user": user, "profile": profile}
     return render(request, "user_update.html", context)
+
 
 def login_form(request):
     context = {"title": "Login"}
@@ -130,7 +136,7 @@ def login_form(request):
                     title="Login Alert Notification",
                     body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please reset your password to secure your account!.",
                     anchor_link="https://codingfox.pythonanywhere.com/users/password-reset/",
-                    anchor_text="Reset Password"
+                    anchor_text="Reset Password",
                 )
             # subject, from_email, to = (
             #     "Login Alert",
@@ -177,7 +183,6 @@ def registeration_form(request):
     return render(request, "newuser.html", context)
 
 
-
 def register_view(request):
     if request.method == "POST":
         email = request.POST.get("email")
@@ -211,7 +216,7 @@ def register_view(request):
                 title="Complete Your Registration",
                 body="Thank you for registering! Please confirm your email by clicking the button below.",
                 anchor_link=confirmation_link,
-                anchor_text="Confirm Email"
+                anchor_text="Confirm Email",
             )
         print(confirmation_link)
         # subject = "Confirm Your Timely Account"
@@ -238,7 +243,10 @@ def register_view(request):
         # msg.attach_alternative(html_content, "text/html")
         # msg.send()
 
-        messages.success(request, "Registration successful. Check your email to confirm your account.")
+        messages.success(
+            request,
+            "Registration successful. Check your email to confirm your account.",
+        )
         return redirect("email_confirmation_pending")  # ✅ Fixed the URL name
 
     return render(request, "register.html", {"title": "Register"})
@@ -252,9 +260,11 @@ def email_confirmation_view(request, token):
         raise Http404("Invalid Token Format")  # If the token is not a valid UUID
 
     try:
-        profile = Profile.objects.get(email_confirmation_token=token_uuid)  # ✅ Query with UUID
+        profile = Profile.objects.get(
+            email_confirmation_token=token_uuid
+        )  # ✅ Query with UUID
     except Profile.DoesNotExist:
-        raise Http404("Invalid or Expired Token")  
+        raise Http404("Invalid or Expired Token")
 
     # Activate user and remove token
     profile.user.is_active = True
@@ -287,22 +297,29 @@ def profile_setup_view(request):
         user.last_name = last_name
         user.save()
 
-        Profile.objects.filter(user=user).update(bio=bio, firstName=first_name, lastName=last_name, email=user.email)
+        Profile.objects.filter(user=user).update(
+            bio=bio, firstName=first_name, lastName=last_name, email=user.email
+        )
 
         messages.success(request, "Profile updated successfully.")
         return redirect("home")
 
     return render(request, "profile_setup.html", {"title": "Complete Profile"})
 
+
 def check_username(request):
     username = request.GET.get("username", "").strip()
-    
+
     if not username:
-        return HttpResponse('<span style="color: red;">❌ Username cannot be empty</span>')
+        return HttpResponse(
+            '<span style="color: red;">❌ Username cannot be empty</span>'
+        )
 
     if User.objects.filter(username=username).exists():
-        return HttpResponse('<span style="color: red;">❌ Username is already taken</span>')
-    
+        return HttpResponse(
+            '<span style="color: red;">❌ Username is already taken</span>'
+        )
+
     return HttpResponse('<span style="color: green;">✅ Username is available</span>')
 
 
@@ -329,7 +346,7 @@ def update_email_request(request):
                 title="Confirm Your New Email",
                 body="Please confirm your new email address.",
                 anchor_link=confirmation_link,
-                anchor_text="Confirm New Email"
+                anchor_text="Confirm New Email",
             )
         # subject = "Confirm Your New Email"
         # from_email = "codingfoxblogs@gmail.com"
@@ -355,10 +372,13 @@ def update_email_request(request):
         # msg.attach_alternative(html_content, "text/html")
         # msg.send()
 
-        messages.success(request, "Verification email sent. Please check your new email.")
+        messages.success(
+            request, "Verification email sent. Please check your new email."
+        )
         return redirect("update_user")
 
     return redirect("update_user")
+
 
 @login_required
 def confirm_new_email(request, token, new_email):
