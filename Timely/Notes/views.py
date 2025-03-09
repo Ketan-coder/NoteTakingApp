@@ -118,7 +118,7 @@ from .models import (Activity, Notebook, Page, Remainder, SharedNotebook,
 def index(request):
     if request.user.is_authenticated:
         start_time = datetime.datetime.now()
-
+        request.session["page"] = "home"
         logined_profile = Profile.objects.get(user=request.user)
         notebooks_list = (
             Notebook.objects.filter(author=logined_profile)
@@ -453,6 +453,7 @@ def exportNotebookToJson(request, pk):
 
 @login_required
 def loadJsonToModels(request):
+    request.session["page"] = "load_json"
     if request.method == "POST":
         json_file = request.FILES.get("json_file")
 
@@ -857,6 +858,7 @@ def shared_notebooks_view(request):
 
 def public_notebooks_view(request):
     # Fetch all public notebooks with related pages and subpages in one query
+    request.session['page'] = 'public_notebooks'
     public_notebooks = Notebook.objects.filter(is_public=True).prefetch_related(
         "page_set__subpage_set"
     )
@@ -1089,13 +1091,14 @@ def notebook_form(request, notebook_id=None):
             priority = request.POST.get("priority", 1)
             is_password_protected = request.POST.get("is_password_protected") == "on"
             password = request.POST.get("password", "") if is_password_protected else ""
+            
 
             new_notebook = Notebook.objects.create(
                 title=title,
                 body=body,
                 priority=priority,
                 is_password_protected=is_password_protected,
-                password=password,
+                password=make_password(password),
                 author=logged_in_profile,
             )
             # Do not remove this
@@ -1642,11 +1645,13 @@ def notebook_password_reset_page(request, pk):
 
 def activity_loader(request):
     """Loads the HTMX-powered activity page"""
+    request.session["page"] = "activity"
     return render(request, "activities/activity_loader.html")
 
 
 def activity_page(request):
     """Fetches activity content asynchronously"""
+    request.session["page"] = "activity"
     logged_in_profile = Profile.objects.get(user=request.user)
     activities = Activity.objects.filter(author=logged_in_profile).order_by(
         "-updated_at"

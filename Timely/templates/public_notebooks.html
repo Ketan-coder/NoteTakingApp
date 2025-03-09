@@ -6,7 +6,7 @@
 
 {% block body %}
   <!-- Public Notebooks Section -->
-  <div class="row m-3">
+  {% comment %} <div class="row m-3">
       <h2>Public Notebooks</h2>
       <div class="card">
           <ul class="list-group list-group-flush">
@@ -38,7 +38,49 @@
           </ul>
       </div>
   </div>
-  
+   {% endcomment %}
+   <div class="row m-3">
+    <h2>Public Notebooks</h2>
+    
+    {% if notebooks %}
+        <div class="container-fluid">
+            {% for notebook in notebooks %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-success mb-2">Public</span>
+                        
+                        <a {% if notebook.is_password_protected %}
+                                href="{% url 'verify_password' notebook.id %}"
+                                style="text-decoration: none; color:hsl(216,100%,60%);"
+                           {% else %}
+                                href="#{{ notebook.title }}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#example-modal-{{ notebook.id }}"
+                                data-notebook-id="{{ notebook.id }}"
+                                class="notebook-title"
+                                style="text-decoration: none; color:hsl(216,100%,60%); cursor:pointer;"
+                           {% endif %}>
+                            <i class="fas fa-book"></i> &ensp; {{ notebook.title }}
+                        </a>
+
+                        <p class="mt-2 text-muted small">
+                            Created at: {{ notebook.created_at }}
+                        </p>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <span class="text-muted">Owner: <strong>({{ notebook.author.user.username }})</strong> - Contact:
+                          <a href="mailto:{{ notebook.author.user.email }}" class="link link-info btn-sm"> Email</a>
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">No Public Notebooks available!</p>
+    {% endif %}
+</div>
+
   {% for notebook in notebooks %}
   <!-- {% if notebook.author.id == logined_profile.id %}
     {% else %} -->

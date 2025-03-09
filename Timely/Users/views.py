@@ -53,7 +53,7 @@ class CustomPasswordResetCompleteView(PasswordResetCompleteView):
 @login_required
 def updateUser(request):
     user = request.user
-
+    request.session['page'] = 'update_user'
     # Ensure email is verified before allowing profile update
     if not user.is_active:
         messages.error(
