@@ -348,8 +348,7 @@
             <li class="list-group-item p-3">
               <h5><a href="#{{favourite.title}}" value="{{favourite.id}}" class="notebook-title" data-notebook-id="{{ favourite.id }}" data-bs-toggle="modal" data-bs-target="#example-modal-{{ favourite.id }}">
                 <span class="badge rounded-pill" style="background-color: #ff4a4a;">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512" fill="#fff" style="width: 15px;">
-                    <path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/></svg> </span>
+                  <svg fill="#fff" width="14px" height="14px" style="margin-top: -5px;" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <g> <path d="M256,0C114.837,0,0,114.843,0,256s114.837,256,256,256s256-114.843,256-256S397.163,0,256,0z M381.804,281.636 l-114,114.011c-3.131,3.131-7.381,4.892-11.804,4.892c-4.423,0-8.674-1.761-11.804-4.892l-114-114.017 c-15.772-15.755-24.457-36.723-24.457-59.021s8.685-43.266,24.457-59.027c15.75-15.761,36.706-24.451,59.021-24.451 c22.315,0,43.272,8.691,59.032,24.462l7.75,7.745l7.761-7.756c15.75-15.761,36.706-24.451,59.021-24.451 s43.272,8.691,59.032,24.462c15.761,15.75,24.446,36.717,24.446,59.016S397.576,265.875,381.804,281.636z"></path> </g> </g> </g></svg>
                     {{ favourite.title }}</a></h5>
               <!--<p>{{ favourite.body|safe }}</p>-->
               <span class="badge rounded-pill text-bg-dark">At - {{ favourite.updated_at }}</span>
@@ -555,6 +554,7 @@
           {% if notebook.is_password_protected %}
             <a disabled href="" class="btn disabled"><i class="fas fa-share-alt"></i> Notebook is Password Protected</a>
           {% else %}
+            <a href="" class="btn">Lock it!</a>
             {% if notebook.is_shared %}
               {% comment %} <a href="{% url 'stopSharingNotebook' pk=notebook.id %}" class="btn btn-outline-info disabled"><i class="fas fa-share-alt" disabled></i> Shared Already</a> {% endcomment %}
             {% else %}

@@ -2,6 +2,7 @@ from datetime import datetime
 import email
 import uuid
 from django.conf import settings
+from Timely import settings as project_settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -17,6 +18,34 @@ from .forms import ProfileForm, UserRegistrationForm
 from .models import Profile
 
 # Create your views here.
+from django.contrib.auth.views import (
+    PasswordResetView, 
+    PasswordResetDoneView, 
+    PasswordResetConfirmView, 
+    PasswordResetCompleteView
+)
+from django.urls import reverse_lazy
+
+# ✅ Request Password Reset (User submits email)
+class CustomPasswordResetView(PasswordResetView):
+    template_name = "users/password_reset.html"
+    email_template_name = "users/password_reset_email.html"
+    subject_template_name = "users/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
+
+# ✅ Password Reset Done (Email sent confirmation page)
+class CustomPasswordResetDoneView(PasswordResetDoneView):
+    template_name = "users/password_reset_done.html"
+
+# ✅ Password Reset Confirm (User sets new password)
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = "users/password_reset_confirm.html"
+    success_url = reverse_lazy("password_reset_complete")
+
+# ✅ Password Reset Complete (Password successfully changed)
+class CustomPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = "users/password_reset_complete.html"
+
 
 @login_required
 def updateUser(request):
@@ -30,24 +59,30 @@ def updateUser(request):
     profile = Profile.objects.get(user=user)
 
     if request.method == "POST":
-        username = request.POST.get("username", "").strip()
-        email = request.POST.get("email", "").strip()
-        first_name = request.POST.get("first_name", "").strip()
-        last_name = request.POST.get("last_name", "").strip()
-        bio = request.POST.get("bio", "").strip()
+        username:str = request.POST.get("username", "").strip() or user.username
+        email:str = request.POST.get("email", "").strip() or user.email
+        first_name:str = request.POST.get("first_name", "").strip()
+        last_name:str = request.POST.get("last_name", "").strip()
+        bio:str = request.POST.get("bio", "").strip()
 
-        # ✅ Basic Validation
-        if User.objects.filter(username=username).exclude(id=user.id).exists():
+        # Check if username exists in User or Profile (excluding the current user)
+        if username and (
+            User.objects.filter(username=username).exclude(pk=user.pk).exists()
+        ):
             messages.error(request, "❌ Username is already taken.")
             return redirect("update_user")
 
-        if User.objects.filter(email=email).exclude(id=user.id).exists():
+        # Check if email exists in User or Profile (excluding the current user)
+        if email and (
+            User.objects.filter(email=email).exclude(pk=user.pk).exists() or 
+            Profile.objects.filter(email=email).exclude(pk=profile.pk).exists()
+        ):
             messages.error(request, "❌ Email is already in use.")
             return redirect("update_user")
 
         # ✅ Save Updates
-        user.username = username
-        user.email = email
+        # user.username = username
+        # user.email = email
         user.first_name = first_name
         user.last_name = last_name
         user.save()
@@ -60,8 +95,18 @@ def updateUser(request):
 
         # ✅ Log Activity
         Activity.objects.create(
-            author=user, title="Updated Profile", body="Updated Profile"
+            author=profile, title="Updated Profile", body="Updated Profile"
         )
+
+        if project_settings.DEBUG is False:
+            send_email(
+                to_email=user.email,
+                subject="Profile Update Alert",
+                title="Profile Update Alert Notification",
+                body=f"Your profile with username '{user.username}' was updated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please log in to secure your account!.",
+                anchor_link="https://timely.pythonanywhere.com/accounts/login/",
+                anchor_text="Login"
+            )
 
         messages.success(request, "Profile updated successfully")
         return redirect("home")
@@ -78,14 +123,15 @@ def login_form(request):
         if user is not None:
             login(request, user)
             messages.success(request, "Login successful")
-            send_email(
-                to_email=user.email,
-                subject="Login Alert",
-                title="Login Alert Notification",
-                body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please reset your password to secure your account!.",
-                anchor_link="https://codingfox.pythonanywhere.com/users/password-reset/",
-                anchor_text="Reset Password"
-            )
+            if project_settings.DEBUG is False:
+                send_email(
+                    to_email=user.email,
+                    subject="Login Alert",
+                    title="Login Alert Notification",
+                    body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please reset your password to secure your account!.",
+                    anchor_link="https://codingfox.pythonanywhere.com/users/password-reset/",
+                    anchor_text="Reset Password"
+                )
             # subject, from_email, to = (
             #     "Login Alert",
             #     "codingfoxblogs@gmail.com",
@@ -158,14 +204,15 @@ def register_view(request):
 
         # ✅ Step 4: Send Confirmation Email
         confirmation_link = f"{settings.SITE_URL}/accounts/confirm-email/{profile.email_confirmation_token}/"
-        send_email(
-            to_email=user.email,
-            subject="Confirm Your Timely Account",
-            title="Complete Your Registration",
-            body="Thank you for registering! Please confirm your email by clicking the button below.",
-            anchor_link=confirmation_link,
-            anchor_text="Confirm Email"
-        )
+        if project_settings.DEBUG is False:
+            send_email(
+                to_email=user.email,
+                subject="Confirm Your Timely Account",
+                title="Complete Your Registration",
+                body="Thank you for registering! Please confirm your email by clicking the button below.",
+                anchor_link=confirmation_link,
+                anchor_text="Confirm Email"
+            )
         print(confirmation_link)
         # subject = "Confirm Your Timely Account"
         # from_email = "codingfoxblogs@gmail.com"
@@ -275,29 +322,38 @@ def update_email_request(request):
 
         # Send email verification link
         confirmation_link = f"{settings.SITE_URL}/confirm-new-email/{profile.email_confirmation_token}/{new_email}/"
-        subject = "Confirm Your New Email"
-        from_email = "codingfoxblogs@gmail.com"
-        to = new_email
-        text_content = "Please confirm your new email."
-        html_content = f'''
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Email Confirmation</title>
-        </head>
-        <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
-            <h2 style="color: #0076d1;">Confirm Your New Email</h2>
-            <p>Hello,</p>
-            <p>Click the link below to verify and update your email address:</p>
-            <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm New Email</a></p>
-            <p>If you did not request this change, please ignore this email.</p>
-        </body>
-        </html>
-        '''
-        msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
-        msg.attach_alternative(html_content, "text/html")
-        msg.send()
+        if project_settings.DEBUG is False:
+            send_email(
+                to_email=new_email,
+                subject="Confirm Your New Email",
+                title="Confirm Your New Email",
+                body="Please confirm your new email address.",
+                anchor_link=confirmation_link,
+                anchor_text="Confirm New Email"
+            )
+        # subject = "Confirm Your New Email"
+        # from_email = "codingfoxblogs@gmail.com"
+        # to = new_email
+        # text_content = "Please confirm your new email."
+        # html_content = f'''
+        # <html lang="en">
+        # <head>
+        #     <meta charset="UTF-8">
+        #     <meta name="viewport" content="width=device-width, initial-scale=1">
+        #     <title>Email Confirmation</title>
+        # </head>
+        # <body style="font-family: 'Poppins', Arial, sans-serif; background: #ffffff; padding: 20px;">
+        #     <h2 style="color: #0076d1;">Confirm Your New Email</h2>
+        #     <p>Hello,</p>
+        #     <p>Click the link below to verify and update your email address:</p>
+        #     <p><a href="{confirmation_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Confirm New Email</a></p>
+        #     <p>If you did not request this change, please ignore this email.</p>
+        # </body>
+        # </html>
+        # '''
+        # msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+        # msg.attach_alternative(html_content, "text/html")
+        # msg.send()
 
         messages.success(request, "Verification email sent. Please check your new email.")
         return redirect("update_user")

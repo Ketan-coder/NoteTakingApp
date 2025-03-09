@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from Notes.utils import render_to_pdf
+from Notes.utils import render_to_pdf, send_email
 from .models import Activity, Notebook, Page, StickyNotes, Remainder, SharedNotebook, SubPage, Todo
 from .forms import NotebookForm, PageForm, StickyNotesForm,RemainderForm,SubPageForm
 from Users.models import Profile
@@ -25,6 +25,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from Timely import settings as project_settings
+from django.contrib.auth.hashers import make_password, check_password
 # # Create your views here.
 # Cache duration (in seconds)
 # CACHE_TIMEOUT = 120  # 2 minutes
@@ -126,7 +128,7 @@ def index(request):
         notebooks_list_priority = notebooks_list.order_by('priority')
         pages = Page.objects.filter(notebook__in=notebooks_list).select_related('notebook').order_by('-order')
         subpages = SubPage.objects.filter(page__in=pages)
-        activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
+        # activities_list = Activity.objects.filter(author=logined_profile).order_by('-created_at')
         sticky_notes = StickyNotes.objects.filter(author=logined_profile)
         remainders = Remainder.objects.filter(author=logined_profile).order_by('alert_time')
         favouritesNotebooks = notebooks_list.filter(is_favourite=True)
@@ -136,9 +138,9 @@ def index(request):
         todos = Todo.objects.filter(author=logined_profile).order_by('-is_completed')
         
         # Set up pagination
-        paginator = Paginator(activities_list, 5)  # Show 10 activities per page
-        page_number = request.GET.get('page')
-        activities = paginator.get_page(page_number)
+        # paginator = Paginator(activities_list, 5)  # Show 10 activities per page
+        # page_number = request.GET.get('page')
+        # activities = paginator.get_page(page_number)
         paginator_notebook = Paginator(notebooks_list, 5)  # Show 10 activities per page
         page_number = request.GET.get('notebook_page')
         notebooks = paginator_notebook.get_page(page_number)
@@ -151,7 +153,7 @@ def index(request):
 
         print(f"Time taken: {end_time - start_time}")
         context = {'notebooks': notebooks,'notebooks_list_priority': notebooks_list_priority, 'logined_profile': logined_profile,
-                   'activities': activities, 'sticky_notes': sticky_notes, "pages": pages,"subpages": subpages,
+                    'sticky_notes': sticky_notes, "pages": pages,"subpages": subpages,
                    'remainders': remainders, 'favouritesNotebooks': favouritesNotebooks, "todos": todos,
                    'favouritesPages': favouritesPages, 'favouritesRemainders': favouritesRemainders,'sharedNotebooks': sharedNotebooks}
     else:
@@ -891,11 +893,13 @@ def notebook_form(request, notebook_id=None):
             # Update notebook
             notebook.title = request.POST.get("title", notebook.title)
             notebook.body = request.POST.get("body", notebook.body)
-            notebook.priority = request.POST.get("priority", notebook.priority)
+            notebook.priority = int(request.POST.get("priority", notebook.priority))
             notebook.is_password_protected = request.POST.get("is_password_protected") == "on"
             notebook.author = logged_in_profile
             if notebook.is_password_protected:
-                notebook.password = request.POST.get("password", notebook.password)
+                _password = request.POST.get("password")
+                if _password:
+                    notebook.password = make_password(_password)
             else:
                 notebook.password = ""  # Clear password if checkbox is unchecked
 
@@ -1297,21 +1301,39 @@ def GeneratePdf(request,pk):
     #rendering the template
     return HttpResponse(pdf, content_type='application/pdf')
 
+# def verify_password(request, pk):
+#     if request.method == 'POST':
+#         notebook = Notebook.objects.get(pk = pk)
+#         password = request.POST.get('notebook_password')
+#         print(str(notebook.password)+" "+str(password))
+#         if notebook.password == password:
+#             notebook.is_password_entered = True
+#             print(notebook.is_password_entered)
+#             notebook.save()
+#             return redirect('password_protected_notebook', pk=pk)
+#         else:
+#             return redirect('home')
+#     else:
+#         context = {}            
+#     return render(request, 'verify.html', context)
 def verify_password(request, pk):
-    if request.method == 'POST':
-        password = request.POST.get('notebook_password')
-        notebook = Notebook.objects.get(pk = pk)
-        print(str(notebook.password)+" "+str(password))
-        if notebook.password == password:
+    notebook = get_object_or_404(Notebook, pk=pk)  # ✅ Handle missing notebooks safely
+
+    if request.method == "POST":
+        password = request.POST.get("notebook_password")
+
+        # ✅ Use `check_password()` for secure comparison
+        if check_password(password, notebook.password):
             notebook.is_password_entered = True
-            print(notebook.is_password_entered)
             notebook.save()
-            return redirect('password_protected_notebook', pk=pk)
+
+            messages.success(request, "Notebook unlocked successfully!")
+            return redirect("password_protected_notebook", pk=pk)
         else:
-            return redirect('home')
-    else:
-        context = {}            
-    return render(request, 'verify.html', context)
+            messages.error(request, "Incorrect password. Please try again.")
+            return redirect("verify_password", pk=pk)  # Redirect back with an error message
+
+    return render(request, "verify.html", {"notebook": notebook})
 
 def password_protected_notebook(request, pk):
     notebook = Notebook.objects.get(pk = pk)
@@ -1366,3 +1388,61 @@ def delete_activity_request(request):
         return HttpResponse('<div class="alert alert-success">✅ All activity logs have been deleted successfully!</div>')
 
     return HttpResponse('<div class="alert alert-danger">❌ Invalid request.</div>', status=400)
+
+
+@login_required
+def request_notebook_password_reset(request, notebook_id):
+    logged_in_profile = Profile.objects.get(user=request.user)
+    notebook = get_object_or_404(Notebook, id=notebook_id, author=logged_in_profile)
+
+    # Generate a reset link
+    reset_link = request.build_absolute_uri(
+        reverse("reset_notebook_password", args=[notebook.id])
+    )
+    print(reset_link)
+    if project_settings.DEBUG is False:
+        send_email(
+            to_email=request.user.email,
+            subject="Reset Your Notebook Password",
+            title="Reset Your Notebook Password",
+            body=f"Click the link below to reset your notebook password.",
+            anchor_link=reset_link,
+            anchor_text="Reset Password",
+        )
+    # Send email with reset link
+    # subject = "Reset Your Notebook Password"
+    # text_content = f"Click the link to reset your notebook password: {reset_link}"
+    # html_content = f"""
+    # <p>You requested to reset your notebook password.</p>
+    # <p>Click the button below to reset it:</p>
+    # <p><a href="{reset_link}" style="padding: 10px; background-color: #0076d1; color: white; text-decoration: none;">Reset Password</a></p>
+    # """
+
+    # msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [request.user.email])
+    # msg.attach_alternative(html_content, "text/html")
+    # msg.send()
+
+    messages.success(request, "Password reset link sent to your email.")
+    return redirect("home")
+
+@login_required
+def reset_notebook_password(request, notebook_id):
+    logged_in_profile = Profile.objects.get(user=request.user)
+    notebook = get_object_or_404(Notebook, id=notebook_id, author=logged_in_profile)
+
+    if request.method == "POST":
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect("reset_notebook_password", notebook_id=notebook.id)
+
+        # ✅ Hash the new password before saving
+        notebook.password = make_password(new_password)
+        notebook.save()
+
+        messages.success(request, "Notebook password has been reset successfully.")
+        return redirect("home")
+
+    return render(request, "notebooks/reset_password.html", {"notebook": notebook})

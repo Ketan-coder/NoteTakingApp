@@ -1,6 +1,12 @@
 from django.urls import path
 from django.views.generic import TemplateView
 from . import views
+from .views import (
+    CustomPasswordResetView,
+    CustomPasswordResetDoneView,
+    CustomPasswordResetConfirmView,
+    CustomPasswordResetCompleteView
+)
 
 urlpatterns = [
     # path("", views.index, name="index"),
@@ -15,4 +21,9 @@ urlpatterns = [
     path("confirm-new-email/<uuid:token>/<str:new_email>/", views.confirm_new_email, name="confirm_new_email"),
     path("setup-profile/", views.profile_setup_view, name="profile_setup"),
     path("email-confirmation-pending/", TemplateView.as_view(template_name="email_pending.html"), name="email_confirmation_pending"),
+
+    path("password-reset/", CustomPasswordResetView.as_view(), name="password_reset"),
+    path("password-reset/done/", CustomPasswordResetDoneView.as_view(), name="password_reset_done"),
+    path("password-reset-confirm/<uidb64>/<token>/", CustomPasswordResetConfirmView.as_view(), name="password_reset_confirm"),
+    path("password-reset-complete/", CustomPasswordResetCompleteView.as_view(), name="password_reset_complete"),
 ]

@@ -57,4 +57,7 @@ urlpatterns = [
     path("activity-loader/", login_required(views.activity_loader), name="activity_loader"),
     path("activity-page/", login_required(views.activity_page), name="activity_page"),
     path("delete-activity-request/", login_required(views.delete_activity_request), name="delete_activity_request"),
+
+    path("notebook/<int:notebook_id>/reset-password-request/", login_required(views.request_notebook_password_reset), name="request_notebook_password_reset"),
+    path("notebook/<int:notebook_id>/reset-password/", login_required(views.reset_notebook_password), name="reset_notebook_password"),
 ]

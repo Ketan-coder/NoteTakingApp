@@ -4,9 +4,16 @@
 
 <div class="d-flex justify-content-center align-items-center vh-100 bg-bg-dark-subtle">
     <div class="card p-4 rounded-4" style="max-width: 400px; width: 100%;">
-        
-        {% if notebook.is_password_protected == true and notebook.is_password_entered == false %}
-        
+
+        <!-- ✅ Show error messages if password is incorrect -->
+        {% if messages %}
+            {% for message in messages %}
+                <p class="text-danger text-center fw-bold">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+
+        {% if notebook.is_password_protected and not notebook.is_password_entered %}
+
         <h2 class="text-center fw-bold mb-3">🔒 Notebook Locked</h2>
         <p class="text-center text-muted">Enter the password to access your notes.</p>
 
@@ -20,19 +27,18 @@
                        placeholder="Enter your password" required>
             </div>
             <div class="mb-3 text-end">
-                <a class="text-decoration-none small text-primary" href="">Forgot password?</a>
-                {% comment %} <a href="{% url 'forgot_password' notebook.pk %}">Forgot password?</a> {% endcomment %}
+                <a class="text-decoration-none small text-primary" href="{% url 'request_notebook_password_reset' notebook_id=notebook.pk %}">Forgot password?</a>
             </div>
             <button type="submit" class="btn btn-primary w-100 rounded-pill py-2">Unlock Notebook</button>
         </form>
 
         {% else %}
-        
+
         <h2 class="text-center text-success fw-bold">✅ Notebook Unlocked</h2>
         <p class="text-center text-muted">You now have access to your notes.</p>
-        
+
         {% endif %}
-    
+
     </div>
 </div>
 

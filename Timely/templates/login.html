@@ -23,10 +23,21 @@
                             <label for="id_password" class="form-label">Password:</label>
                             <input type="password" id="id_password" name="password" class="form-control" placeholder="Enter your password">
                         </div>
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">Login</button>
-                            <a href="{% url 'signup' %}">Register</a>
+                        <!-- Horizontal stack -->
+                        <div class="hstack gap-2">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                            <a href="{% url 'signup' %}" class="ms-3">Register</a>
+                        <div class="vr ms-auto"></div>
+                        <a href="{% url 'password_reset' %}" class="text-primary">Forgot Password?</a>
                         </div>
+
+                        {% comment %} <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                            <a href="{% url 'signup' %}" class="ms-3">Register</a>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'password_reset' %}" class="text-primary">Forgot Password?</a>
+                        </div> {% endcomment %}
                     </form>
                 </div>
             </div>
