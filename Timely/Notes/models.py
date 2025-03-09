@@ -46,7 +46,8 @@ class Notebook(models.Model):
         if self.is_password_protected and not self.password:
             raise ValueError("Password is required for password-protected notebooks.")
         elif self.is_password_protected and self.password:
-            self.password = make_password(self.password)
+            if not self.password.startswith("pbkdf2_sha256$"):  # Avoid double hashing
+                self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
     def check_password(self, password):

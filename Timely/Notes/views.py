@@ -1595,26 +1595,27 @@ def GeneratePdf(request, pk):
 #         context = {}
 #     return render(request, 'verify.html', context)
 def verify_password(request, pk):
-    notebook = get_object_or_404(Notebook, pk=pk)  # ✅ Handle missing notebooks safely
+    notebook = get_object_or_404(Notebook, pk=pk)
 
     if request.method == "POST":
         password = request.POST.get("notebook_password")
+        print(f"Entered Password: {password}")
+        print(f"Stored Hashed Password: {notebook.password}")
 
-        # ✅ Use `check_password()` for secure comparison
-        if check_password(password, notebook.password):
+        # Debugging: Check if password matches
+        password_match = check_password(password, notebook.password)
+        print(f"Password Match: {password_match}")
+
+        if password_match:
             notebook.is_password_entered = True
             notebook.save()
-
             messages.success(request, "Notebook unlocked successfully!")
             return redirect("password_protected_notebook", pk=pk)
         else:
             messages.error(request, "Incorrect password. Please try again.")
-            return redirect(
-                "verify_password", pk=pk
-            )  # Redirect back with an error message
+            return redirect("verify_password", pk=pk)
 
     return render(request, "verify.html", {"notebook": notebook})
-
 
 def password_protected_notebook(request, pk):
     notebook = Notebook.objects.get(pk=pk)
@@ -1733,6 +1734,8 @@ def reset_notebook_password(request, notebook_id):
             return redirect("reset_notebook_password", notebook_id=notebook.id)
 
         # ✅ Hash the new password before saving
+        print(new_password)
+        print(make_password(new_password))
         notebook.password = make_password(new_password)
         notebook.save()
 
