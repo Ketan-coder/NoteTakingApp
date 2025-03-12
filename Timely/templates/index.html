@@ -451,7 +451,6 @@
 <!-- Notebook Modal -->
 <!-- Modal with form -->
 
-
 {% for notebook in notebooks %}
 
 {% if notebook.author.id != logined_profile.id %}
@@ -468,7 +467,8 @@
         <div class="row">
           <div class="col-3">
                       <!-- First collapse -->
-                <div class="m-2 position-fixed" style="width: 17%;">
+                <!-- <div class="m-2 position-fixed" style="width: 17%;"> -->
+                  <div class="m-2 notebook-sidebar">
                   <button type="button" class="btn btn-link d-flex align-items-baseline" data-bs-toggle="collapse" data-bs-target="#collapse-example-{{ notebook.id }}" aria-expanded="true" aria-controls="collapse-example-{{ notebook.id }}">
                   <i class="fas fa-book-open"></i> &ensp;Pages
                 </button>
@@ -554,7 +554,7 @@
           {% if notebook.is_password_protected %}
             <a disabled href="" class="btn disabled"><i class="fas fa-share-alt"></i> Notebook is Password Protected</a>
           {% else %}
-            <a href="" class="btn">Lock it!</a>
+            <!-- <a href="" class="btn">Lock it!</a> -->
             {% if notebook.is_shared %}
               {% comment %} <a href="{% url 'stopSharingNotebook' pk=notebook.id %}" class="btn btn-outline-info disabled"><i class="fas fa-share-alt" disabled></i> Shared Already</a> {% endcomment %}
             {% else %}

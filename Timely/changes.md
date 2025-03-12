@@ -9,9 +9,9 @@
 -- Added Fix for JSON file was not downloaded in notebook
 
 -- Want to add (Priority at First)
-    -- Dynamic Notebook/page/subpage Fetching via Ajax which should decrease the load time
-    -- Forgot Password Page, with Logic
-    -- Todo Block in place of Recent Notebooks
+    -- [Done] Dynamic Notebook/page/subpage Fetching via Ajax which should decrease the load time
+    -- [Done] Forgot Password Page, with Logic
+    -- [Done] Todo Block in place of Recent Notebooks
     -- Shift Recent Notebooks to All Notebooks section which has a filter to categorize/show - all/recent/favourite/ Notebooks
-    -- PDF Export
-    -- JSON Export and Load for backup
+    -- [Done] PDF Export
+    -- [Done] JSON Export and Load for backup

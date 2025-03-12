@@ -48,45 +48,88 @@
     <meta name="theme-color" content="#ffffff">
     <style>
       /* Add this CSS to your stylesheet or FAB-specific CSS file */
-.fab-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000; /* Ensure FAB is above other elements */
-}
+    .fab-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000; /* Ensure FAB is above other elements */
+    }
+    .fab-btn {
+        display: inline-block;
+        width: 200px;
+        height: 60px;
+        border-radius: 10px;
+        background-color: #3385ff; /* Change color as desired */
+        color: #fff;
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
+        line-height: 60px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
 
-.fab-btn {
-    display: inline-block;
-    width: 200px;
-    height: 60px;
-    border-radius: 10px;
-    background-color: #3385ff; /* Change color as desired */
-    color: #fff;
-    font-size: 16px;
-    font-weight: 500;
-    text-align: center;
-    line-height: 60px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    transition: background-color 0.3s ease;
-}
+    .fab-btn:hover {
+        background-color: #0056b3; /* Change hover color as desired */
+    }
+    .mobile_col {
+      display: flex !important;
+    }
 
-.fab-btn:hover {
-    background-color: #0056b3; /* Change hover color as desired */
-}
-.mobile_col {
-  display: flex !important;
-}
+    @media (min-height: 680px) and (orientation: portrait) {
+      .mobile_col {
+        display: block !important;
+      }
+    }
+    img{
+        width: 550px !important;
+        height: auto;
+    }
+    .notebook-sidebar {
+      width: 70%;       /* or remove if you want to handle width differently */
+      max-height: 80vh; /* so it doesn't overflow the screen */
+      overflow-y: auto; /* scrollable sidebar */
+      position: sticky; /* or position: fixed; depending on your preference */
+      top: 0;
+      direction: rtl;       /* Moves the scrollbar to the left */
+      text-align: left;
+      padding-right: 10px;
+    }
+    .notebook-sidebar * {
+      direction: ltr;   /* Resets inner content direction to normal */
+      text-align: left; /* Ensures text remains properly aligned */
+    }
+    /* For WebKit Browsers (Chrome, Edge, Safari) */
+    .notebook-sidebar::-webkit-scrollbar {
+      width: 2px; /* Initially hidden */
+      transition: width 0.5s ease-in-out; /* Smoothly hide scrollbar */
+    }
 
-@media (min-height: 680px) and (orientation: portrait) {
-  .mobile_col {
-    display: block !important;
-  }
-}
-img{
-    width: 550px !important;
-    height: auto;
-}
+    .notebook-sidebar:hover::-webkit-scrollbar {
+      width: 8px;
+    }
+
+
+    .notebook-sidebar::-webkit-scrollbar-track {
+      background: #1e1e2e; /* Background color of the track */
+      border-radius: 10px; /* Rounded edges */
+    }
+
+    .notebook-sidebar::-webkit-scrollbar-thumb {
+      background: #4a4a66; /* Scrollbar color */
+      border-radius: 10px; /* Rounded scrollbar */
+      transition: background 0.3s ease-in-out;
+    }
+
+    .notebook-sidebar::-webkit-scrollbar-thumb:hover {
+      background: #6e6e99; /* Hover effect */
+    }
+    .notebook-sidebar:not(:hover)::-webkit-scrollbar {
+      width: 0px;
+      transition: width 0.5s ease-in-out 0.5s; /* Delays hiding by 0.5s */
+    }
+
     </style>
     <title>
 		{% block title %}
