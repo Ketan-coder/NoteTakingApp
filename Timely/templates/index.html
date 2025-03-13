@@ -321,15 +321,15 @@
                     <ul class="list-group list-group-flush">
                       {% for notebook in sharedNotebooks %}
                       <li class="list-group-item p-3">
-                        {% if notebook.notebook.is_shared %}
+                        {% if notebook.notebook.is_shared or notebook.notebook.is_public and not notebook.notebook.is_password_protected %}
                         <!-- <i class="fas fa-share-alt"></i>  -->
-                        <a href="{% url 'stopSharingNotebook' notebook.id %}" style="text-decoration: none;margin-right: 1%;"><span class="badge rounded-pill">Stop Sharing</span></a>
-                        {% endif %}
+                        <a href="{% url 'stopSharingNotebook' notebook.id %}" style="text-decoration: none;margin-right: 1%;"><span class="badge rounded-pill bg-danger">Stop Sharing</span></a>
                         <a href="#{{notebook.notebook.title}}" value="{{notebook.notebook.id}}" class="notebook-title" data-notebook-id="{{ notebook.notebook.id }}" style="text-decoration: none;" data-bs-toggle="modal" data-bs-target="#example-modal-{{ notebook.notebook.id }}">
                           {% comment %} <i class="fas fa-book"></i> {% endcomment %}
-                           &ensp;{{notebook.notebook.title}}
+                          &ensp;{{notebook.notebook.title}}
                           <!-- <svg style="width: 1.5%;margin-left: 1%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.<path fill="#3385ff" d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z"/></svg> -->
                         </a>&ensp;&ensp; <a href="https://timely.pythonanywhere.com/{{notebook.shareable_link}}" onClick="window.open(this.href); return false;">Shareable Link - https://timely.pythonanywhere.com/{{notebook.shareable_link}}</a></li>
+                        {% endif %}
                         {% empty %}
                         <li class="list-group-item p-3">No Notebooks are shared!</li>
                         {% endfor %}
@@ -660,11 +660,11 @@
                     <div class="form-check" id="editPermissionBox-{{ notebook.id }}" style="display: none;">
                         <input class="form-check-input" type="checkbox" id="canEdit-{{ notebook.id }}" name="can_edit">
                         <label class="form-check-label" for="canEdit-{{ notebook.id }}">
-                            Allow editing permissions
+                            Allow Add/Edit/Delete permissions for this Notebook
                         </label>
                     </div>
-                    <hr>
-                    <div class="mb-3">
+                    <hr id="hr-{{ notebook.id }}" style="display: none;">
+                    <div class="mb-3" id="shareableLinkBox-{{ notebook.id }}" style="display: none;">
                       <label for="shareableLink-{{ notebook.id }}" class="form-label">Shareable Link:</label>
                       <div class="input-group">
                           <input type="text" class="form-control" id="shareableLink-{{ notebook.id }}" value="https://timely.pythonanywhere.com/sharedNotebooks/" readonly>
@@ -676,7 +676,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Share Notebook</button>
+                    <button type="submit" class="btn btn-danger" id="shareButton-{{ notebook.id }}">Make it Public</button>
                 </div>
             </form>
         </div>
@@ -687,10 +687,23 @@
   function toggleCheckbox(notebookId) {
       let emailInput = document.getElementById("sharedEmails-" + notebookId);
       let checkboxDiv = document.getElementById("editPermissionBox-" + notebookId);
+      let shareButton = document.getElementById("shareButton-" + notebookId);
+      let shareableLinkBox = document.getElementById("shareableLinkBox-" + notebookId);
+      let hr = document.getElementById("hr-" + notebookId);
 
       if (emailInput.value.trim() === "") {
+        shareButton.textContent = "Make this Notebook Public";
+        shareButton.classList.remove("btn-primary");
+        shareButton.classList.add("btn-danger");
+        shareableLinkBox.style.display = "none";
+        hr.style.display = "none";
           checkboxDiv.style.display = "none";
       } else {
+        shareButton.textContent = "Share Notebook";
+        shareButton.classList.remove("btn-danger");
+        shareButton.classList.add("btn-primary");
+        shareableLinkBox.style.display = "block";
+        hr.style.display = "block";
           checkboxDiv.style.display = "block";
       }
   }
@@ -728,7 +741,7 @@
         <div class="row">
           <div class="col-3">
                   <!-- First collapse -->
-                <div class="m-2 position-fixed" style="width: 16%;">
+                <div class="m-2 notebook-sidebar">
                   <button type="button" class="btn btn-link d-flex align-items-baseline" data-bs-toggle="collapse" data-bs-target="#collapse-example-{{ notebook.id }}" aria-expanded="true" aria-controls="collapse-example-{{ notebook.id }}">
                   <i class="fas fa-book-open"></i> &ensp;Pages
                 </button>
@@ -791,6 +804,29 @@
 
 {% endfor %}
 
+{% for page in pages %}
+<div class="modal fade" id="deletePageModal-{{ page.id }}" tabindex="-1" aria-labelledby="deletePageModal-{{ page.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePageModalLabel-{{ page.id }}">Delete Page</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the page &ensp;<i class="fas fa-book"></i>"{{ page.title }}"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'deletePage' page.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirmed" value="true">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
   <!-- Pages Modal -->
 {% for page in subpages %}
 <div class="modal fade" id="example-modal-subpage-{{ page.id }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal-title-subpage-{{ page.id }}" aria-hidden="true">
@@ -845,20 +881,20 @@
 {% endfor %}
 
 {% for page in subpages %}
-<div class="modal fade" id="deleteSubPageModal-{{ page.id }}" tabindex="-1" aria-labelledby="deleteSubPageModallabel-{{ page.id }}" aria-hidden="true">
+<div class="modal fade" id="deleteSubPageModal-{{ page.id }}" tabindex="-1" aria-labelledby="deleteSubPageModalabel-{{ page.id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteSubPageModallLabel-{{ page.id }}">Delete Page</h5>
-                <button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}"></button>
+                <h5 class="modal-title" id="deleteSubPageModalLabel-{{ page.id }}">Delete SubPage</h5>
+                <button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.page.notebook.id }}"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the Page "{{ page.title }}"?</p>
+                <p>Are you sure you want to delete the SubPage "{{ page.title }}"?</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.notebook.id }}>Cancel</button>
-                <form action="{% url 'deletePage' page.id %}" method="post">
-                    {% csrf_token %}
+              <form action="{% url 'deleteSubPage' page.id %}" method="post">
+                {% csrf_token %}
+                {% comment %} <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#example-modal-{{ page.page.notebook.id }}">Cancel</button> {% endcomment %}
                     <input type="hidden" name="confirmed" value="true">
                     <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
@@ -868,7 +904,7 @@
 </div>
 {% endfor %}
 
-{% for page in subpages %}
+{% comment %} {% for page in subpages %}
 <div class="modal fade" id="deletePageModal-{{ page.id }}" tabindex="-1" aria-labelledby="deletePageModallabel-{{ page.id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -890,7 +926,7 @@
         </div>
     </div>
 </div>
-{% endfor %}
+{% endfor %} {% endcomment %}
 
 <!-- tabs -->
   <div class="tab-pane fade" id="nav-remainders" role="tabpanel" aria-labelledby="nav-remainders-tab" tabindex="0">
