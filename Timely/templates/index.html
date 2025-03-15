@@ -13,6 +13,14 @@
 .drag-handle:active {
     cursor: grabbing;
 }
+@media (max-width: 760px) {
+    /* #sticky_notes {
+        display: none;
+    } */
+    #recent_notebooks {
+        display: none;
+    }
+}
 
 </style>
 {% endblock head %}
@@ -54,7 +62,7 @@
     </div>
     <div class="m-3 p-1">
         <div class="row mobile_col">
-            <div class="col-3">
+            <div class="col-3" id="sticky_notes">
                 <h3>Sticky Notes</h3>
                 <!-- Spinner Card -->
                 <!-- Horizontally centered using flexbox -->
@@ -87,8 +95,8 @@
               </div>
             {% endfor %}
             </div>
-            <div class="col-8 offset-1 m-1">
-                <h3>Recents Notebooks</h3>
+            <div class="col-8 offset-1 m-1" id="recent_notebooks">
+                <h3>Recent Notebooks</h3>
                 <!-- Spinner Card -->
                 <!-- Horizontally centered using flexbox -->
                 <!-- <div class="m-5 d-flex justify-content-center">
