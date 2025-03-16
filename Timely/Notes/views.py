@@ -248,18 +248,25 @@ def delete_todo(request, todo_id):
 #     return render(request, "components/notebook_body.html", {"body": content})
 
 
-def fetch_notebook_contents(request, notebook_id=None, page_id=None, subpage_id=None):
+def fetch_notebook_contents(request, notebook_id=None, page_id=None, subpage_id=None, notebook_uuid=None, subpage_uuid=None, page_uuid=None):
     """Fetch the body content of a notebook, page, or subpage dynamically for HTMX as JSON."""
 
     content = None  # Default empty content
 
     if subpage_id:
         content = get_object_or_404(SubPage, id=subpage_id).body
+    elif subpage_uuid:
+        content = get_object_or_404(SubPage, subpage_uuid=subpage_uuid).body
     elif page_id:
         content = get_object_or_404(Page, id=page_id).body
+    elif page_uuid:
+        content = get_object_or_404(Page, page_uuid=page_uuid).body
     elif notebook_id:
         notebook = get_object_or_404(Notebook, id=notebook_id)
         content = notebook.body  # Ensure we fetch the correct body
+    elif notebook_uuid:
+        notebook = get_object_or_404(Notebook, notebook_uuid=notebook_uuid)
+        content = notebook.body
     else:
         return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -1057,12 +1064,15 @@ def create_notebook(request):
     return render(request, "create_notebook.html", {"form": form})
 
 
-def notebook_form(request, notebook_id=None):
+def notebook_form(request, notebook_uuid=None, notebook_id=None):
     """Handles both creating and updating a notebook in a single template."""
     notebook = None
     logged_in_profile = Profile.objects.get(user=request.user)
     if notebook_id:
         notebook = get_object_or_404(Notebook, id=notebook_id)
+
+    if notebook_uuid:
+        notebook = get_object_or_404(Notebook, notebook_uuid=notebook_uuid)
 
     if request.method == "POST":
         if notebook:
@@ -1104,12 +1114,12 @@ def notebook_form(request, notebook_id=None):
             # Do not remove this
             # new_page = Page.objects.create(title="Page", body="Dummy Body", notebook=new_notebook, author=logged_in_profile)
             # Do not remove this ^
-            return JsonResponse({"redirect": f"/notebook/{new_notebook.pk}/"})
+            return JsonResponse({"redirect": f"/notebook/{new_notebook.notebook_uuid}/"})
 
     return render(request, "notebook_form.html", {"notebook": notebook})
 
 
-def page_form(request, page_pk=None, notebook_pk=None):
+def page_form(request, page_pk=None, notebook_pk=None, page_uuid=None, notebook_uuid=None):
     """Handles both creating and updating a notebook in a single template."""
     page = None
     notebook = None
@@ -1118,6 +1128,10 @@ def page_form(request, page_pk=None, notebook_pk=None):
         notebook = get_object_or_404(Notebook, id=notebook_pk)
     if page_pk:
         page = get_object_or_404(Page, id=page_pk)
+    if notebook_uuid:
+        notebook = get_object_or_404(Notebook, notebook_uuid=notebook_uuid)
+    if page_uuid:
+        page = get_object_or_404(Page, page_uuid=page_uuid)
 
     if request.method == "POST":
         if page:
@@ -1144,7 +1158,7 @@ def page_form(request, page_pk=None, notebook_pk=None):
                 order=order,
                 author=logged_in_profile,
             )
-            return JsonResponse({"redirect": f"/page/{new_page.pk}/"})
+            return JsonResponse({"redirect": f"/page/{new_page.page_uuid}/"})
 
     return render(request, "page_form.html", {"page": page, "notebook": notebook})
 
@@ -1268,7 +1282,7 @@ def create_subpage(request, notebook_pk: int, page_pk: int):
     return render(request, "sub_page_create.html", {"form": form})
 
 
-def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
+def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None, subpage_uuid=None, page_uuid=None, notebook_uuid=None):
     """Handles both creating and updating a subpage, allowing updates with just subpage_pk."""
 
     subpage = None
@@ -1281,12 +1295,22 @@ def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
         subpage = get_object_or_404(SubPage, id=subpage_pk)
         notebook = subpage.notebook
         page = subpage.page
+    elif subpage_uuid:
+        subpage = get_object_or_404(SubPage, subpage_uuid=subpage_uuid)
+        notebook = subpage.notebook
+        page = subpage.page
     else:
-        if not notebook_pk or not page_pk:
-            return redirect("home")  # Prevents errors when creating a new subpage
+        if (not notebook_pk and not notebook_uuid) or (not page_pk and not page_uuid):
+            return redirect("home")
+        
+        # print("Notebook uuid: ", notebook_uuid)
+        # notebook = get_object_or_404(Notebook, notebook_uuid=notebook_uuid)
+        # page = get_object_or_404(Page, page_uuid=page_uuid)
+        notebook = get_object_or_404(Notebook, notebook_uuid=notebook_uuid) if notebook_uuid else get_object_or_404(Notebook, id=notebook_pk)
+        page = get_object_or_404(Page, page_uuid=page_uuid) if page_uuid else get_object_or_404(Page, id=page_pk)
 
-        notebook = get_object_or_404(Notebook, id=notebook_pk)
-        page = get_object_or_404(Page, id=page_pk)
+    if not notebook or not page:
+        return redirect("home")
 
     if request.method == "POST":
         if subpage:
@@ -1297,7 +1321,7 @@ def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
 
             if request.headers.get("HX-Request"):
                 return JsonResponse({"status": "saved", "title": subpage.title})
-            return redirect("update_subpage", subpage_pk=subpage.id)
+            return redirect("update_sub_page_by_uuid", subpage_uuid=subpage.subpage_uuid)
 
         else:
             # Create new subpage
@@ -1324,11 +1348,11 @@ def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None):
                 return JsonResponse(
                     {
                         "redirect": reverse(
-                            "update_sub_page", kwargs={"subpage_pk": new_subpage.id}
+                            "update_sub_page_by_uuid", kwargs={"subpage_uuid": new_subpage.subpage_uuid}
                         )
                     }
                 )
-            return redirect("update_sub_page", subpage_pk=new_subpage.id)
+            return redirect("update_sub_page_by_uuid", subpage_uuid=new_subpage.subpage_uuid)
 
     return render(
         request,

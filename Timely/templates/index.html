@@ -521,7 +521,7 @@
                       style="display: none;">
               </button> {% endcomment %}
               <button id="load-content-{{ notebook.id }}"
-                          hx-get="{% url 'fetch_notebook_notebook' notebook_id=notebook.id %}"
+                          hx-get="{% url 'fetch_notebook_by_uuid' notebook_uuid=notebook.notebook_uuid %}"
                           hx-trigger="click"
                           hx-target="#notebook-body-{{ notebook.id }}"
                           hx-ext="json-enc"
@@ -554,8 +554,8 @@
 
         {% if notebook.author.id != logined_profile.id %}
         {% else %}
-          <a href="{% url 'create_page' notebook_pk=notebook.id %}" class="btn btn-info">Add Page</a>
-          <a href="{% url 'update_notebook' notebook.id %}" class="btn btn-primary">Edit</a>
+          <a href="{% url 'create_page_by_uuid' notebook_uuid=notebook.notebook_uuid %}" class="btn btn-info">Add Page</a>
+          <a href="{% url 'update_notebook_by_uuid' notebook_uuid=notebook.notebook_uuid %}" class="btn btn-primary">Edit</a>
           <a href="{% url 'generate_pdf' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export PDF</a>
           <a href="{% url 'exportNotebookToJson' pk=notebook.id %}" class="btn btn-outline-success"><i class="fas fa-file-pdf"></i> Export JSON</a>
 
@@ -769,7 +769,7 @@
           <div class="col-9">
             <div id="page-body-{{ page.id }}" data-page-id="{{ page.id }}">
               <button id="load-content-page-{{ page.id }}"
-                          hx-get="{% url 'fetch_notebook_pages' page_id=page.id %}"
+                          hx-get="{% url 'fetch_page_by_uuid' page_uuid=page.page_uuid %}"
                           hx-trigger="click"
                           hx-target="#page-body-{{ page.id }}"
                           hx-ext="json-enc"
@@ -800,8 +800,8 @@
 
         {% if page.author.id != logined_profile.id %}
           {% else %}
-          <a href="{% url 'create_subpage' notebook_pk=page.notebook.pk page_pk=page.id %}" class="btn btn-info">Add Sub Page</a>
-          <a href="{% url 'update_page' page_pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="{% url 'create_subpage_by_uuid' notebook_uuid=page.notebook.notebook_uuid page_uuid=page.page_uuid %}" class="btn btn-info">Add Sub Page</a>
+          <a href="{% url 'update_page_by_uuid' page_uuid=page.page_uuid %}" type="button" class="btn btn-primary">Edit</a>
           <a href="" data-bs-toggle="modal" data-bs-target="#deletePageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
         {% endif %}
 
@@ -848,7 +848,7 @@
       <div class="modal-body">
         <div id="subpage-body-{{ page.id }}" data-subpage-id="{{ page.id }}">
               <button id="load-content-subpage-{{ page.id }}"
-                          hx-get="{% url 'fetch_notebook_subpages' subpage_id=page.id %}"
+                          hx-get="{% url 'fetch_subpage_by_uuid' subpage_uuid=page.subpage_uuid %}"
                           hx-trigger="click"
                           hx-target="#subpage-body-{{ page.id }}"
                           hx-ext="json-enc"
@@ -877,7 +877,7 @@
 
         {% if page.author.id != logined_profile.id %}
           {% else %}
-          <a href="{% url 'update_sub_page' subpage_pk=page.id %}" type="button" class="btn btn-primary">Edit</a>
+          <a href="{% url 'update_sub_page_by_uuid' subpage_uuid=page.subpage_uuid %}" type="button" class="btn btn-primary">Edit</a>
           <a href="" data-bs-toggle="modal" data-bs-target="#deleteSubPageModal-{{ page.id }}" type="button" class="btn btn-outline-danger">Delete</a>
         {% endif %}
 

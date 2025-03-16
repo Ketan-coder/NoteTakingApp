@@ -20,6 +20,9 @@ urlpatterns = [
         login_required(views.fetch_notebook_contents),
         name="fetch_notebook_subpages",
     ),
+    path('fetching-contents/notebook/<uuid:notebook_uuid>/', login_required(views.fetch_notebook_contents), name='fetch_notebook_by_uuid'),
+    path('fetching-contents/page/<uuid:page_uuid>/', login_required(views.fetch_notebook_contents), name='fetch_page_by_uuid'),
+    path('fetching-contents/subpage/<uuid:subpage_uuid>/', login_required(views.fetch_notebook_contents), name='fetch_subpage_by_uuid'),
     path(
         "create-notebook/", login_required(views.notebook_form), name="create_notebook"
     ),
@@ -27,6 +30,11 @@ urlpatterns = [
         "notebook/<int:notebook_id>/",
         login_required(views.notebook_form),
         name="update_notebook",
+    ),
+    path(
+        "notebook/<uuid:notebook_uuid>/",
+        login_required(views.notebook_form),
+        name="update_notebook_by_uuid",
     ),
     path(
         "autosave/<int:pk>/",
@@ -38,7 +46,13 @@ urlpatterns = [
         login_required(views.page_form),
         name="create_page",
     ),
+    path(
+        "create-page/<uuid:notebook_uuid>/",
+        login_required(views.page_form),
+        name="create_page_by_uuid",
+    ),
     path("page/<int:page_pk>/", login_required(views.page_form), name="update_page"),
+    path("page/<uuid:page_uuid>/", login_required(views.page_form), name="update_page_by_uuid"),
     path(
         "update-page-order/",
         login_required(views.update_page_order),
@@ -66,6 +80,11 @@ urlpatterns = [
         name="create_subpage",
     ),
     path(
+        "create_subpage/<uuid:notebook_uuid>/<uuid:page_uuid>/",
+        login_required(views.subpage_form),
+        name="create_subpage_by_uuid",
+    ),
+    path(
         "sticky_notes/<int:pk>/",
         login_required(views.updateStickyNotes),
         name="update_sticky_notes",
@@ -90,6 +109,11 @@ urlpatterns = [
         "update_sub_page/<int:subpage_pk>/",
         login_required(views.subpage_form),
         name="update_sub_page",
+    ),
+    path(
+        "update_sub_page/<uuid:subpage_uuid>/",
+        login_required(views.subpage_form),
+        name="update_sub_page_by_uuid",
     ),
     path(
         "deleteNotebook/<int:pk>/",

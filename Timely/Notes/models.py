@@ -8,7 +8,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from Users.models import Profile
-
+import uuid
 
 # PRIORITY_LIST = [
 #     ('Important','Important'),
@@ -16,6 +16,7 @@ from Users.models import Profile
 # ]
 # Create your models here.
 class Notebook(models.Model):
+    notebook_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=100)
     body: str = models.TextField()
     priority = models.IntegerField(default=0)
@@ -48,6 +49,8 @@ class Notebook(models.Model):
         elif self.is_password_protected and self.password:
             if not self.password.startswith("pbkdf2_sha256$"):  # Avoid double hashing
                 self.password = make_password(self.password)
+        if not self.notebook_uuid:
+            self.notebook_uuid = uuid.uuid4()
         super().save(*args, **kwargs)
 
     def check_password(self, password):
@@ -61,6 +64,7 @@ class Notebook(models.Model):
 
 
 class SharedNotebook(models.Model):
+    sharednotebook_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     notebook = models.OneToOneField(Notebook, on_delete=models.CASCADE)
     owner = models.ForeignKey(
         Profile, on_delete=models.CASCADE, related_name="notebook_owner"
@@ -84,7 +88,8 @@ class SharedNotebook(models.Model):
         notebook = self.notebook
         notebook.is_shared = True
         notebook.save()
-
+        if not self.sharednotebook_uuid:
+            self.sharednotebook_uuid = uuid.uuid4()
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -96,6 +101,7 @@ class SharedNotebook(models.Model):
 
 
 class Page(models.Model):
+    page_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     title: str = models.CharField(max_length=100)
     body: str = models.TextField()
@@ -117,6 +123,8 @@ class Page(models.Model):
             self.order = (
                 (last_page.order + 1) if last_page else 1
             )  # Get next order for this notebook
+        if not self.page_uuid:
+            self.page_uuid = uuid.uuid4()
         super().save(*args, **kwargs)
 
     # def save(self, *args, **kwargs):
@@ -126,6 +134,7 @@ class Page(models.Model):
 
 
 class SubPage(models.Model):
+    subpage_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE)
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     title: str = models.CharField(max_length=100)
@@ -137,13 +146,16 @@ class SubPage(models.Model):
     def __str__(self) -> str:
         return self.page.title + " " + self.title
 
-    # def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
+        if not self.subpage_uuid:
+            self.subpage_uuid = uuid.uuid4()
     #     if not self.updated_at:
     #         self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-    #     super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Remainder(models.Model):
+    remainder_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=100)
     body: str = models.TextField()
     alert_time = models.DateTimeField()
@@ -175,11 +187,13 @@ class Remainder(models.Model):
         now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
 
         self.is_over = self.alert_time < now_with_offset
-
+        if not self.remainder_uuid:
+            self.remainder_uuid = uuid.uuid4()
         super().save(*args, **kwargs)
 
 
 class StickyNotes(models.Model):
+    stickynotes_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=10)
     body: str = models.CharField(max_length=75)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -189,13 +203,16 @@ class StickyNotes(models.Model):
     def __str__(self) -> str:
         return self.title
 
-    # def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
+        if not self.stickynotes_uuid:
+            self.stickynotes_uuid = uuid.uuid4()
     #     if not self.updated_at:
     #         self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-    #     super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Activity(models.Model):
+    activity_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=100)
     body: str = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -205,13 +222,16 @@ class Activity(models.Model):
     def __str__(self) -> str:
         return self.title
 
-    # def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
+        if not self.activity_uuid:
+            self.activity_uuid = uuid.uuid4()
     #     if not self.updated_at:
     #         self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-    #     super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Todo(models.Model):
+    todo_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=200)
     is_completed: bool = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -220,6 +240,11 @@ class Todo(models.Model):
 
     def __str__(self) -> str:
         return self.title
-
+    
+    def save(self, *args, **kwargs):
+        if not self.todo_uuid:
+            self.todo_uuid = uuid.uuid4()
+        super().save(*args, **kwargs)
+        
     class Meta:
         ordering = ["-is_completed"]
