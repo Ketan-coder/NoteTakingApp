@@ -1163,11 +1163,11 @@ def page_form(request, page_pk=None, notebook_pk=None, page_uuid=None, notebook_
     return render(request, "page_form.html", {"page": page, "notebook": notebook})
 
 
-def autosave_notebook(request, pk):
+def autosave_notebook(request, notebook_uuid):
     """Handles autosaving the notebook fields."""
     if request.method == "POST":
         # notebook_id = request.POST.get("notebook_id")
-        notebook = get_object_or_404(Notebook, id=pk)
+        notebook = get_object_or_404(Notebook, notebook_uuid=notebook_uuid)
 
         # Update fields
         notebook.title = request.POST.get("title", notebook.title)
@@ -1190,11 +1190,11 @@ def autosave_notebook(request, pk):
     return JsonResponse({"message": "Error"}, status=400)
 
 
-def autosave_page(request, pk):
+def autosave_page(request, page_uuid):
     """Handles autosaving the page fields."""
     if request.method == "POST":
         # notebook_id = request.POST.get("notebook_id")
-        page = get_object_or_404(Page, id=pk)
+        page = get_object_or_404(Page, page_uuid=page_uuid)
 
         # Update fields
         page.title = request.POST.get("title", page.title)
@@ -1361,11 +1361,11 @@ def subpage_form(request, subpage_pk=None, notebook_pk=None, page_pk=None, subpa
     )
 
 
-def autosave_subpage(request, pk):
+def autosave_subpage(request, subpage_uuid):
     """Handles autosaving the Subpage fields."""
     if request.method == "POST":
         # notebook_id = request.POST.get("notebook_id")
-        subPage = get_object_or_404(SubPage, id=pk)
+        subPage = get_object_or_404(SubPage, subpage_uuid=subpage_uuid)
 
         # Update fields
         subPage.title = request.POST.get("title", subPage.title)

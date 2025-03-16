@@ -37,7 +37,7 @@ urlpatterns = [
         name="update_notebook_by_uuid",
     ),
     path(
-        "autosave/<int:pk>/",
+        "autosave/<uuid:notebook_uuid>/",
         login_required(views.autosave_notebook),
         name="autosave_notebook",
     ),
@@ -59,12 +59,12 @@ urlpatterns = [
         name="update_page_order",
     ),
     path(
-        "autosave/page/<int:pk>/",
+        "autosave/page/<uuid:page_uuid>/",
         login_required(views.autosave_page),
         name="autosave_page",
     ),
     path(
-        "autosave/subpage/<int:pk>/",
+        "autosave/subpage/<uuid:subpage_uuid>/",
         login_required(views.autosave_subpage),
         name="autosave_subpage",
     ),

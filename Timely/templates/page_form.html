@@ -29,14 +29,14 @@
         <!-- Title Input -->
         <input type="text" id="id_title" name="title" class="form-control notebook-title" required
                placeholder="Untitled" value="{{ page.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if page %} hx-post="{% url 'autosave_page' page.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               {% if page %} hx-post="{% url 'autosave_page' page.page_uuid %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         
         <!-- Order Input -->
         <div class="input-group has-validation">
             <span class="input-group-text" >></span>
             <input type="number" id="id_order" name="order" class="form-control notebook-priority" required 
                placeholder="Ordering Value e.g 1" value="{{ page.order|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if page %} hx-post="{% url 'autosave_page' page.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               {% if page %} hx-post="{% url 'autosave_page' page.page_uuid %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         </div>
 
         <!-- Rich Text Editor -->
@@ -44,7 +44,7 @@
         
         <!-- Hidden Input for Saving -->
         <textarea id="id_body" name="body" class="d-none" required
-                  {% if page %}hx-post="{% url 'autosave_page' page.id %}"
+                  {% if page %}hx-post="{% url 'autosave_page' page.page_uuid %}"
                   hx-trigger="change delay:500ms"
                   hx-target="#save-status"{% endif %}>
             {{ page.body|default_if_none:'' }}

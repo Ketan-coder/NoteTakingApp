@@ -29,7 +29,7 @@
         <!-- Title Input -->
         <input type="text" id="id_title" name="title" class="form-control notebook-title" required
                placeholder="Untitled" value="{{ subpage.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if subpage %} hx-post="{% url 'autosave_subpage' subpage.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               {% if subpage %} hx-post="{% url 'autosave_subpage' subpage.subpage_uuid %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         
 
         <!-- Rich Text Editor -->
@@ -37,7 +37,7 @@
         
         <!-- Hidden Input for Saving -->
         <textarea id="id_body" name="body" class="d-none" required
-                  {% if subpage %}hx-post="{% url 'autosave_subpage' subpage.id %}"
+                  {% if subpage %}hx-post="{% url 'autosave_subpage' subpage.subpage_uuid %}"
                   hx-trigger="change delay:500ms"
                   hx-target="#save-status"{% endif %}>
             {{ subpage.body|default_if_none:'' }}

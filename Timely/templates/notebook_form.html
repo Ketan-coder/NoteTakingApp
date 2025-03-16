@@ -41,7 +41,7 @@
             
         <input type="text" id="id_title" name="title" class="form-control notebook-title" required
                placeholder="Untitled" value="{{ notebook.title|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.notebook_uuid %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
                <div class="invalid-feedback">
                     Please provide a valid title.
                 </div>
@@ -51,13 +51,13 @@
             <span class="input-group-text" id="1-username-prepend">^</span>
         <input type="number" id="id_priority" name="priority" class="form-control notebook-priority" required max="5" min="1"
                placeholder="Priority (1 lower, 5 highest)" value="{{ notebook.priority|default_if_none:'' }}" style="background: none; border: none; color: white;"
-               {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+               {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.notebook_uuid %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         </div>
         <!-- Password Protection -->
         <div class="form-switch mt-3">
             <input class="form-check-input" type="checkbox" name="is_password_protected" id="id_is_password_protected"
                    {% if notebook.is_password_protected %}checked{% endif %}
-                   {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="change" hx-target="#save-status" {% endif %}>
+                   {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.notebook_uuid %}" hx-trigger="change" hx-target="#save-status" {% endif %}>
             <label class="form-check-label" for="id_is_password_protected">
                 Add Password Protection
             </label>
@@ -68,7 +68,7 @@
             <input type="password" id="id_password" name="password"
                    class="form-control notebook-password" placeholder="Enter password"
                    value="{{ notebook.password|default_if_none:'' }}"
-                   {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.id %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
+                   {% if notebook %} hx-post="{% url 'autosave_notebook' notebook.notebook_uuid %}" hx-trigger="keyup changed delay:500ms" hx-target="#save-status" {% endif %}>
         </div>
 
         <!-- Rich Text Editor -->
@@ -76,7 +76,7 @@
         
         <!-- Hidden Input for Saving -->
         <textarea id="id_body" name="body" class="d-none" required
-                  {% if notebook %}hx-post="{% url 'autosave_notebook' notebook.id %}"
+                  {% if notebook %}hx-post="{% url 'autosave_notebook' notebook.notebook_uuid %}"
                   hx-trigger="change delay:500ms"
                   hx-target="#save-status"{% endif %}>
             {{ notebook.body|default_if_none:'' }}
