@@ -7,6 +7,7 @@ urlpatterns = [
 	path('admin/', admin.site.urls),
 	path('accounts/', include('Users.urls')),
 	path('', include('Notes.urls')),
+	path('api/', include('Notes.api_urls')),
 ]
 if settings.DEBUG:
 	urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

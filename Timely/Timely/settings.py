@@ -153,9 +153,25 @@ INSTALLED_APPS = [
     "Notes.apps.NotesConfig",
     "crispy_forms",
     "django_htmx",
+    'rest_framework',
+    'rest_framework.authtoken',
 ]
 
-CRISPY_TEMPLATE_PACK = "bootstrap4"
+# CRISPY_TEMPLATE_PACK = "bootstrap4"
+
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
+
 
 # ----------------Leave this for STATICFILES_DIRS with the below code----------------\/
 
