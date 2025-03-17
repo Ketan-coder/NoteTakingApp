@@ -1,9 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .api import NotebookViewSet, CustomAuthToken
+from .api import NotebookViewSet, CustomAuthToken, PageViewSet
 
 router = DefaultRouter()
 router.register(r'notebooks', NotebookViewSet, basename='notebook')
+router.register(r'pages', PageViewSet, basename='page')
 
 urlpatterns = [
     path('api-login/', CustomAuthToken.as_view(), name='api-login'),
