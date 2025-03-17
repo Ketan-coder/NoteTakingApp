@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -6,61 +6,18 @@ from .models import *
 from .serializers import *
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from rest_framework.views import APIView
 from Users.models import Profile
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import NotFound
+from django.shortcuts import get_object_or_404
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# class NotebookViewSet(viewsets.ViewSet):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     """
-#     API endpoint for managing notebooks.
-#     """
-    
-#     def list(self, request):
-#         notebooks = Notebook.objects.filter(user=request.user)
-#         serializer = NotebookSerializer(notebooks, many=True)
-#         return Response(serializer.data)
-
-#     def create(self, request):
-#         serializer = NotebookSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(user=request.user)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def retrieve(self, request, pk=None):
-#         try:
-#             notebook = Notebook.objects.get(pk=pk, user=request.user)
-#         except Notebook.DoesNotExist:
-#             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         serializer = NotebookSerializer(notebook)
-#         return Response(serializer.data)
-
-#     def update(self, request, pk=None):
-#         try:
-#             notebook = Notebook.objects.get(pk=pk, user=request.user)
-#         except Notebook.DoesNotExist:
-#             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         serializer = NotebookSerializer(notebook, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def destroy(self, request, pk=None):
-#         try:
-#             notebook = Notebook.objects.get(pk=pk, user=request.user)
-#         except Notebook.DoesNotExist:
-#             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         notebook.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Custom pagination class for notebooks.
+    """
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 # Working
 class NotebookViewSet(viewsets.ModelViewSet):
@@ -70,6 +27,35 @@ class NotebookViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = NotebookSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title','body','is_public']  # Enables search via query parameter: ?search=<title>
+    lookup_field = 'id'  # Default lookup field
+
+    def get_object(self):
+        """
+        Retrieve a single notebook by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, notebook_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self):
         """
@@ -79,7 +65,22 @@ class NotebookViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=user).first()
         if not profile:
             return Notebook.objects.none()
-        return Notebook.objects.filter(author=profile)
+        # return Notebook.objects.filter(author=profile)
+        queryset = Notebook.objects.filter(author=profile).order_by('priority')
+
+        # Filtering via query parameters
+        title = self.request.query_params.get('title')
+        body = self.request.query_params.get('body')
+        is_public = self.request.query_params.get('is_public')
+
+        if body:
+            queryset = queryset.filter(body__icontains=body)
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if is_public:
+            queryset = queryset.filter(is_public=True)
+
+        return queryset
 
     def create(self, request, *args, **kwargs):
         """
@@ -148,6 +149,35 @@ class PageViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = PageSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title','body','order']  # Enables search via query parameter: ?search=<title>
+    lookup_field = 'id'  # Default lookup field
+
+    def get_object(self):
+        """
+        Retrieve a single notebook by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, page_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self):
         """
@@ -157,7 +187,18 @@ class PageViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=user).first()
         if not profile:
             return Page.objects.none()
-        return Page.objects.filter(author=profile)
+        # return Page.objects.filter(author=profile)
+        queryset = Page.objects.filter(author=profile).order_by('order')
+
+        # Filtering via query parameters
+        title = self.request.query_params.get('title')
+        body = self.request.query_params.get('body')
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if body:
+            queryset = queryset.filter(body__icontains=body)
+
+        return queryset
 
     def create(self, request, *args, **kwargs):
         """
@@ -226,6 +267,35 @@ class SubPageViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = SubPageSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title','body']  # Enables search via query parameter: ?search=<title>
+    lookup_field = 'id'  # Default lookup field
+
+    def get_object(self):
+        """
+        Retrieve a single notebook by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, subpage_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self):
         """
@@ -235,8 +305,19 @@ class SubPageViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=user).first()
         if not profile:
             return SubPage.objects.none()
-        return SubPage.objects.filter(author=profile)
+        # return SubPage.objects.filter(author=profile)
+        queryset = SubPage.objects.filter(author=profile).order_by('-created_at')
 
+        # Filtering via query parameters
+        title = self.request.query_params.get('title')
+        body = self.request.query_params.get('body')
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if body:
+            queryset = queryset.filter(body__icontains=body)
+
+        return queryset
+    
     def create(self, request, *args, **kwargs):
         """
         Create a new subpage and assign it to the authenticated user.
@@ -304,6 +385,35 @@ class RemainderViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = RemainderSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title','body','is_favorite','is_completed','is_over']  # Enables search via query parameter: ?search=<title>
+    lookup_field = 'id'  # Default lookup field
+
+    def get_object(self):
+        """
+        Retrieve a single notebook by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, remainder_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self):
         """
@@ -313,7 +423,27 @@ class RemainderViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=user).first()
         if not profile:
             return Remainder.objects.none()
-        return Remainder.objects.filter(author=profile)
+        # return Remainder.objects.filter(author=profile)
+        queryset = Remainder.objects.filter(author=profile).order_by('-created_at')
+
+        # Filtering via query parameters
+        title = self.request.query_params.get('title')
+        body = self.request.query_params.get('body')
+        is_favorite = self.request.query_params.get('is_favorite')
+        is_completed = self.request.query_params.get('is_completed')
+        is_over = self.request.query_params.get('is_over')
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if body:
+            queryset = queryset.filter(body__icontains=body)
+        if is_favorite:
+            queryset = queryset.filter(is_favorite=is_favorite)
+        if is_completed:
+            queryset = queryset.filter(is_completed=is_completed)
+        if is_over:
+            queryset = queryset.filter(is_over=is_over)
+
+        return queryset
 
     def create(self, request, *args, **kwargs):
         """
@@ -382,6 +512,35 @@ class TodoViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = TodoSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title','is_completed',]  # Enables search via query parameter: ?search=<title>
+    lookup_field = 'id'  # Default lookup field
+
+    def get_object(self):
+        """
+        Retrieve a single notebook by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, todo_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self):
         """
@@ -391,7 +550,18 @@ class TodoViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=user).first()
         if not profile:
             return Todo.objects.none()
-        return Todo.objects.filter(author=profile)
+        # return Todo.objects.filter(author=profile)
+        queryset = Todo.objects.filter(author=profile).order_by('-created_at')
+
+        # Filtering via query parameters
+        title = self.request.query_params.get('title')
+        is_completed = self.request.query_params.get('is_completed')
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if is_completed:
+            queryset = queryset.filter(is_completed=is_completed)
+        
+        return queryset
 
     def create(self, request, *args, **kwargs):
         """
@@ -460,6 +630,35 @@ class SharedNotebookViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = SharedNotebookSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['notebook','sharedTo']  # Enables search via query parameter: ?search=<title>
+    lookup_field = 'id'  # Default lookup field
+
+    def get_object(self):
+        """
+        Retrieve a single notebook by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, sharednotebook_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self):
         """
@@ -469,7 +668,18 @@ class SharedNotebookViewSet(viewsets.ModelViewSet):
         profile = Profile.objects.filter(user=user).first()
         if not profile:
             return SharedNotebook.objects.none()
-        return SharedNotebook.objects.filter(owner=profile)
+        # return SharedNotebook.objects.filter(owner=profile)
+        queryset = SharedNotebook.objects.filter(owner=profile).order_by('-created_at')
+
+        # Filtering via query parameters
+        notebook = self.request.query_params.get('notebook')
+        sharedTo = self.request.query_params.get('sharedTo')
+        if notebook:
+            queryset = queryset.filter(notebook=notebook)
+        if sharedTo:
+            queryset = queryset.filter(sharedTo=sharedTo)
+        
+        return queryset
 
     def create(self, request, *args, **kwargs):
         """

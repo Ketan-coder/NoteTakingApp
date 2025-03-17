@@ -4,6 +4,8 @@ from .models import *
 from Users.models import Profile
 
 class NotebookSerializer(serializers.ModelSerializer):
+    pages = serializers.SerializerMethodField()
+    sugpages = serializers.SerializerMethodField() 
     class Meta:
         model = Notebook
         fields = '__all__'
@@ -15,7 +17,20 @@ class NotebookSerializer(serializers.ModelSerializer):
         validated_data['author'] = profile  # Assign logged-in user as author
         return super().create(validated_data)
     
+    def get_pages(self, obj):
+        """
+        Return a list of all page UUIDs associated with this notebook.
+        """
+        return obj.page_set.values_list("page_uuid", flat=True)
+    
+    def get_sugpages(self, obj):
+        """
+        Return a list of all subpage UUIDs associated with this notebook.
+        """
+        return obj.subpage_set.values_list("subpage_uuid", flat=True)
+    
 class PageSerializer(serializers.ModelSerializer):
+    subpages = serializers.SerializerMethodField() 
     class Meta:
         model = Page
         fields = '__all__'
@@ -26,6 +41,12 @@ class PageSerializer(serializers.ModelSerializer):
         profile = Profile.objects.get(user=request.user)  # Get profile of logged-in user
         validated_data['author'] = profile  # Assign logged-in user as author
         return super().create(validated_data)
+    
+    def get_subpages(self, obj):
+        """
+        Return a list of all subpage UUIDs associated with this page.
+        """
+        return obj.subpage_set.values_list("subpage_uuid", flat=True)
     
 class SubPageSerializer(serializers.ModelSerializer):
     class Meta:
