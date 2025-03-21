@@ -72,6 +72,7 @@ class NotebookViewSet(viewsets.ModelViewSet):
         title = self.request.query_params.get('title')
         body = self.request.query_params.get('body')
         is_public = self.request.query_params.get('is_public')
+        shared_with_me = self.request.query_params.get('shared_with_me')
 
         if body:
             queryset = queryset.filter(body__icontains=body)
@@ -79,6 +80,8 @@ class NotebookViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=title)
         if is_public:
             queryset = queryset.filter(is_public=True)
+        if shared_with_me:
+            queryset = Notebook.objects.filter(shared_with=profile)
 
         return queryset
 
