@@ -80,7 +80,7 @@ class NotebookViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=title)
         if is_public:
             queryset = queryset.filter(is_public=True)
-        if shared_with_me:
+        if shared_with_me and shared_with_me.lower() in ["true", "1"]:
             queryset = Notebook.objects.filter(shared_with=profile)
 
         return queryset
