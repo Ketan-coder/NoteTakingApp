@@ -109,8 +109,8 @@ def updateUser(request):
                 subject="Profile Update Alert",
                 title="Profile Update Alert Notification",
                 body=f"Your profile with username '{user.username}' was updated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please log in to secure your account!.",
-                anchor_link="https://timely.pythonanywhere.com/accounts/login/",
-                anchor_text="Login",
+                anchor_link="https://timely.pythonanywhere.com/accounts/password-reset/",
+                anchor_text="Reset Password",
             )
 
         messages.success(request, "Profile updated successfully")
@@ -135,7 +135,7 @@ def login_form(request):
                     subject="Login Alert",
                     title="Login Alert Notification",
                     body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. If this was not you, please reset your password to secure your account!.",
-                    anchor_link="https://codingfox.pythonanywhere.com/users/password-reset/",
+                    anchor_link="https://timely.pythonanywhere.com/accounts/password-reset/",
                     anchor_text="Reset Password",
                 )
             # subject, from_email, to = (

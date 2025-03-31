@@ -2,6 +2,8 @@ from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+
+from Timely.Notes.utils import send_email
 from .models import *
 from .serializers import *
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -754,4 +756,12 @@ class CustomAuthToken(ObtainAuthToken):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
+        send_email(
+                    to_email=user.email,
+                    subject="Login Alert",
+                    title="Login Alert Notification",
+                    body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} via Mobile App. If this was not you, please reset your password to secure your account!.",
+                    anchor_link="https://timely.pythonanywhere.com/accounts/password-reset/",
+                    anchor_text="Reset Password",
+                )
         return Response({'token': token.key, 'user_id': user.id, 'username': user.username})
