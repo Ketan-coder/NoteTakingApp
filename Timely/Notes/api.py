@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
-from Timely.Notes.utils import send_email
+from Notes.utils import send_email
 from .models import *
 from .serializers import *
 from rest_framework.authtoken.views import ObtainAuthToken
