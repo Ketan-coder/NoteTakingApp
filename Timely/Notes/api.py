@@ -12,6 +12,7 @@ from Users.models import Profile
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import NotFound
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 class StandardResultsSetPagination(PageNumberPagination):
     """
@@ -41,16 +42,21 @@ class NotebookViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         lookup_value = self.kwargs.get(self.lookup_field)
 
+        user = self.request.user
+        profile = Profile.objects.filter(user=user).first()
+
+        base_q = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile))
+
         if not lookup_value:
             raise NotFound({"error": "No lookup value provided"})
 
         # Try fetching by ID (integer)
         if str(lookup_value).isdigit():
-            return get_object_or_404(queryset, id=int(lookup_value))
+            return get_object_or_404(base_q, id=int(lookup_value))
 
         # Try fetching by UUID
         try:
-            return get_object_or_404(queryset, notebook_uuid=lookup_value)
+            return get_object_or_404(base_q, notebook_uuid=lookup_value)
         except ValueError:
             raise NotFound({"error": "Invalid UUID format"})
 
