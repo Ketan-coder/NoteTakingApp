@@ -5,12 +5,22 @@ from .models import Profile
 from django.utils import timezone
 from Notes.models import Notebook, StickyNotes, Remainder
 from rest_framework.authtoken.models import Token
+from Notes.utils import send_email
+import uuid
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        profile = Profile.objects.create(user=instance, email_confirmation_token = uuid.uuid4())
         Token.objects.create(user=instance)
+        send_email(
+            to_email=instance.email,
+            subject="Confirm Your Email",
+            title="Confirm Email",
+            body=f"Hi {instance.username}, click the button below to verify your email.",
+            anchor_link=f"https://timely.pythonanywhere.com/accounts/confirm/{profile.email_confirmation_token}/",            
+            anchor_text="Confirm Email"
+        )
 
 @receiver(post_save, sender=User)
 def save_profile(sender, instance, **kwargs):
