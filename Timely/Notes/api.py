@@ -770,4 +770,4 @@ class CustomAuthToken(ObtainAuthToken):
                     anchor_link="https://timely.pythonanywhere.com/accounts/password-reset/",
                     anchor_text="Reset Password",
                 )
-        return Response({'token': token.key, 'user_id': user.id, 'username': user.username})
+        return Response({'token': token.key, 'user_id': user.id, 'username': user.username, 'email': user.email, 'first_name': user.first_name, 'last_name': user.last_name}, status=status.HTTP_200_OK)
