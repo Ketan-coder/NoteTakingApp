@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from Users.models import Profile
 import uuid
+from datetime import timezone as dt_timezone
 
 # PRIORITY_LIST = [
 #     ('Important','Important'),
@@ -169,27 +170,38 @@ class Remainder(models.Model):
     def __str__(self) -> str:
         return self.title
 
-    # def save(self, *args, **kwargs):
-    #     # if not self.updated_at:
-    #     #     self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-    #     if self.alert_time < timezone.now() + datetime.timedelta(hours=5, minutes=30):
-    #         self.is_over = True
-    #     else:
-    #         self.is_over = False
-    #     super().save(*args, **kwargs)
     def save(self, *args, **kwargs):
-        if self.alert_time and timezone.is_naive(self.alert_time):
-            self.alert_time = timezone.make_aware(
-                self.alert_time, timezone.get_current_timezone()
-            )
+        # Ensure `alert_time` is timezone-aware and stored in UTC
+        if self.alert_time:
+            if timezone.is_naive(self.alert_time):
+                # Assume naive input is in current system/local timezone (e.g. from admin panel)
+                self.alert_time = timezone.make_aware(
+                    self.alert_time, timezone.get_current_timezone()
+                )
+            # Convert to UTC
+            self.alert_time = self.alert_time.astimezone(dt_timezone.utc)
 
-        # Ensure timezone-aware comparison
-        now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
+        # Compare in UTC
+        self.is_over = self.alert_time < timezone.now()
 
-        self.is_over = self.alert_time < now_with_offset
         if not self.remainder_uuid:
             self.remainder_uuid = uuid.uuid4()
+
         super().save(*args, **kwargs)
+        
+    # def save(self, *args, **kwargs):
+    #     if self.alert_time and timezone.is_naive(self.alert_time):
+    #         self.alert_time = timezone.make_aware(
+    #             self.alert_time, timezone.get_current_timezone()
+    #         )
+
+    #     # Ensure timezone-aware comparison
+    #     now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
+
+    #     self.is_over = self.alert_time < now_with_offset
+    #     if not self.remainder_uuid:
+    #         self.remainder_uuid = uuid.uuid4()
+    #     super().save(*args, **kwargs)
 
 
 class StickyNotes(models.Model):

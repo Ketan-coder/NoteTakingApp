@@ -1403,11 +1403,18 @@ def remainder_form(request, remainder_pk=None):
         # Convert alert_time from string to datetime (Handle empty value)
         alert_time_str = request.POST.get("alert_time", "")
         try:
+            # alert_time = (
+            #     datetime.datetime.strptime(alert_time_str, "%Y-%m-%dT%H:%M")
+            #     if alert_time_str
+            #     else timezone.now()
+            # )
             alert_time = (
                 datetime.datetime.strptime(alert_time_str, "%Y-%m-%dT%H:%M")
                 if alert_time_str
                 else timezone.now()
             )
+            if timezone.is_naive(alert_time):
+                alert_time = timezone.make_aware(alert_time, timezone.get_current_timezone())
         except ValueError:
             alert_time = timezone.now()  # Fallback to current time if invalid
 
@@ -1431,7 +1438,7 @@ def remainder_form(request, remainder_pk=None):
 
         else:
             # Create new remainder
-            new_remainder = Remainder.objects.create(
+            new_remainder = Remainder(
                 title=title,
                 body=body,
                 alert_time=alert_time,
@@ -1439,8 +1446,17 @@ def remainder_form(request, remainder_pk=None):
                 is_completed=is_completed,
                 author=logined_profile,
             )
+            new_remainder.save()
             messages.success(request, "Reminder created successfully!")
-            return JsonResponse({"redirect": f"/remainder/{new_remainder.pk}/"})
+            # return JsonResponse({"redirect": f"/remainder/{new_remainder.id}/"})
+            # ✅ Conditional redirect based on HTMX/AJAX header
+            if request.headers.get("HX-Request"):
+                return JsonResponse({
+                    "redirect": reverse("update_reminder", kwargs={"remainder_pk": new_remainder.pk})
+                })
+
+            # ✅ Standard redirect
+            return redirect("update_reminder", remainder_pk=new_remainder.pk)
 
     return render(request, "remainder_form.html", {"remainder": remainder})
 
