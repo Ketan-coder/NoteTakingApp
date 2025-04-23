@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
+from .models import Profile
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -37,3 +38,22 @@ class RegisterSerializer(serializers.ModelSerializer):
             return user
         except Exception as e:
             raise serializers.ValidationError({"error": str(e)})
+
+class ProfileSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField() 
+    class Meta:
+        model = Profile
+        fields = '__all__'
+        read_only_fields = ['email_confirmation_token', 'user', 'id']
+
+    def get_profile(self, obj):
+        """
+        Return a list of profiles associated with the user.
+        """
+        return {
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "email": obj.user.email,
+            "username": obj.user.username,
+            "lastLogin": obj.user.last_login.strftime('%Y-%m-%d %H:%M:%S') if obj.user.last_login else None,
+        }
