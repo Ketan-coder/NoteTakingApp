@@ -196,10 +196,13 @@ class PageViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         profile = Profile.objects.filter(user=user).first()
+      
         if not profile:
             return Page.objects.none()
         # return Page.objects.filter(author=profile)
-        queryset = Page.objects.filter(author=profile).order_by('order')
+        
+        accessible_notebooks = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile))
+        queryset = Page.objects.filter(notebook__in=accessible_notebooks).order_by('order')
 
         # Filtering via query parameters
         title = self.request.query_params.get('title')
@@ -317,7 +320,10 @@ class SubPageViewSet(viewsets.ModelViewSet):
         if not profile:
             return SubPage.objects.none()
         # return SubPage.objects.filter(author=profile)
-        queryset = SubPage.objects.filter(author=profile).order_by('-created_at')
+        # queryset = SubPage.objects.filter(author=profile).order_by('-created_at')
+
+        accessible_notebooks = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile))
+        queryset = SubPage.objects.filter(notebook__in=accessible_notebooks).order_by('-created_at')
 
         # Filtering via query parameters
         title = self.request.query_params.get('title')
