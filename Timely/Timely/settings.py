@@ -235,7 +235,7 @@ CORS_ALLOW_HEADERS = [
 # OR for specific allowed origin (safe for prod):
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:64640",
-    "https://timely.pythonanywhere.com/",
+    "https://timely.pythonanywhere.com",
 ]
 
 CORS_ALLOW_METHODS = [
