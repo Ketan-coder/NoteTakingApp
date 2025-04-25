@@ -59,6 +59,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = "Timely.urls"
@@ -155,6 +156,7 @@ INSTALLED_APPS = [
     "django_htmx",
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders'
 ]
 
 # CRISPY_TEMPLATE_PACK = "bootstrap4"
@@ -205,6 +207,28 @@ TEMPLATES = [
     },
 ]
 
+# For development (unsafe for prod):
+# CORS_ALLOW_ALL_ORIGINS = True  
+
+# OR for specific allowed origin (safe for prod):
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:64640",
+    "https://timely.pythonanywhere.com/",
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+]
 
 X_FRAME_OPTIONS = "ALLOW-FROM https://timely.pythonanywhere.com/"
 
