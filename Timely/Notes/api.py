@@ -686,7 +686,7 @@ class SharedNotebookViewSet(viewsets.ModelViewSet):
         if not profile:
             return SharedNotebook.objects.none()
         # return SharedNotebook.objects.filter(owner=profile)
-        queryset = SharedNotebook.objects.filter(owner=profile).order_by('-created_at')
+        queryset = SharedNotebook.objects.filter(owner=profile).order_by('-shared_at')
 
         # Filtering via query parameters
         notebook = self.request.query_params.get('notebook')
