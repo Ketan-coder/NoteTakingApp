@@ -45,7 +45,7 @@ class NotebookViewSet(viewsets.ModelViewSet):
         user = self.request.user
         profile = Profile.objects.filter(user=user).first()
 
-        base_q = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile))
+        base_q = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile) | Q(is_public=True))
 
         if not lookup_value:
             raise NotFound({"error": "No lookup value provided"})
@@ -87,7 +87,7 @@ class NotebookViewSet(viewsets.ModelViewSet):
         if title:
             queryset = queryset.filter(title__icontains=title)
         if is_public:
-            queryset = queryset.filter(is_public=True)
+            queryset = Notebook.objects.filter(is_public=True)
         if shared_with_me and shared_with_me.lower() in ["true", "1"]:
             queryset = Notebook.objects.filter(shared_with=profile)
 
@@ -201,7 +201,7 @@ class PageViewSet(viewsets.ModelViewSet):
             return Page.objects.none()
         # return Page.objects.filter(author=profile)
         
-        accessible_notebooks = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile))
+        accessible_notebooks = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile) | Q(is_public=True))
         queryset = Page.objects.filter(notebook__in=accessible_notebooks).order_by('order')
 
         # Filtering via query parameters
@@ -322,7 +322,7 @@ class SubPageViewSet(viewsets.ModelViewSet):
         # return SubPage.objects.filter(author=profile)
         # queryset = SubPage.objects.filter(author=profile).order_by('-created_at')
 
-        accessible_notebooks = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile))
+        accessible_notebooks = Notebook.objects.filter(Q(author=profile) | Q(shared_with=profile) | Q(is_public=True))
         queryset = SubPage.objects.filter(notebook__in=accessible_notebooks).order_by('-created_at')
 
         # Filtering via query parameters
