@@ -246,9 +246,11 @@ class Todo(models.Model):
     todo_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=200)
     is_completed: bool = models.BooleanField(default=False)
+    # completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    # extra_fields = models.JSONField(blank=True, null=True, default=dict,)
 
     def __str__(self) -> str:
         return self.title
