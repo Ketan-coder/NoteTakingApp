@@ -22,6 +22,14 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+class TodoResultsSetPagination(PageNumberPagination):
+    """
+    Custom pagination class for todos/reminders.
+    """
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
 # Working
 class NotebookViewSet(viewsets.ModelViewSet):
     """
@@ -402,7 +410,7 @@ class RemainderViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = RemainderSerializer
-    pagination_class = StandardResultsSetPagination
+    pagination_class = TodoResultsSetPagination
     filter_backends = [filters.SearchFilter]
     search_fields = ['title','body','is_favorite','is_completed','is_over']  # Enables search via query parameter: ?search=<title>
     lookup_field = 'id'  # Default lookup field
@@ -529,7 +537,7 @@ class TodoViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = TodoSerializer
-    pagination_class = StandardResultsSetPagination
+    pagination_class = TodoResultsSetPagination
     filter_backends = [filters.SearchFilter]
     search_fields = ['title','is_completed',]  # Enables search via query parameter: ?search=<title>
     lookup_field = 'id'  # Default lookup field
