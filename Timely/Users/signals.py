@@ -11,7 +11,7 @@ import uuid
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        profile = Profile.objects.create(user=instance, email_confirmation_token = uuid.uuid4())
+        profile = Profile.objects.create(user=instance, firstName=instance.first_name, lastName=instance.last_name, email=instance.email, email_confirmation_token=uuid.uuid4())
         Token.objects.create(user=instance)
         send_email(
             to_email=instance.email,
