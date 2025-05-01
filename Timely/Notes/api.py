@@ -13,6 +13,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import NotFound
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from rest_framework.decorators import action
 
 class StandardResultsSetPagination(PageNumberPagination):
     """
@@ -160,6 +161,26 @@ class NotebookViewSet(viewsets.ModelViewSet):
 
         instance.delete()
         return Response({"message": "Notebook deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=True, methods=['get'], url_path='page-and-subpage-names')
+    def get_page_and_subpage_names(self, request, id=None):
+        """
+        Custom endpoint to fetch only the names, id, and order of pages and subpages in a notebook.
+        """
+        notebook = self.get_object()
+
+        # Pages of the notebook
+        pages = Page.objects.filter(notebook=notebook).order_by('order')
+        pages_data = PageNameSerializer(pages, many=True).data
+
+        # Subpages nested under those pages
+        subpages = SubPage.objects.filter(page__in=pages, notebook=notebook)
+        subpages_data = SubPageNameSerializer(subpages, many=True).data
+
+        return Response({
+            "pages": pages_data,
+            "subpages": subpages_data
+        })
     
 class PageViewSet(viewsets.ModelViewSet):
     """
@@ -780,7 +801,7 @@ class CustomAuthToken(ObtainAuthToken):
                     to_email=user.email,
                     subject="Login Alert",
                     title="Login Alert Notification",
-                    body=f"Your account with username '{user.username}' was accessed on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} via Mobile App. If this was not you, please reset your password to secure your account!.",
+                    body=f"Your account with username '{user.username}' was accessed on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} via Mobile App. If this was not you, please reset your password to secure your account!.",
                     anchor_link="https://timely.pythonanywhere.com/accounts/password-reset/",
                     anchor_text="Reset Password",
                 )

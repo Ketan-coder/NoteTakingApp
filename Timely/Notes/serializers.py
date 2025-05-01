@@ -29,6 +29,17 @@ class NotebookSerializer(serializers.ModelSerializer):
         """
         return obj.subpage_set.values_list("subpage_uuid", flat=True)
     
+class PageNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Page
+        fields = ['page_uuid','id', 'title', 'order']
+
+
+class SubPageNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubPage
+        fields = ['subpage_uuid','id', 'title']
+
 class PageSerializer(serializers.ModelSerializer):
     subpages = serializers.SerializerMethodField() 
     class Meta:
