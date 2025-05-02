@@ -53,6 +53,9 @@ class UserPreferences(models.Model):
     extra_settings = models.JSONField(
         blank=True, null=True, default=dict,
     )  # For any extra settings you want to add
+    
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.profile.user.username}'s Settings"
