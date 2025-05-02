@@ -36,9 +36,11 @@ class PageNameSerializer(serializers.ModelSerializer):
 
 
 class SubPageNameSerializer(serializers.ModelSerializer):
+    page_uuid = serializers.CharField(source='page.page_uuid', read_only=True)
+
     class Meta:
         model = SubPage
-        fields = ['subpage_uuid','id', 'title']
+        fields = ['subpage_uuid','id', 'title', 'page_uuid']
 
 class PageSerializer(serializers.ModelSerializer):
     subpages = serializers.SerializerMethodField() 
