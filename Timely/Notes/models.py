@@ -40,6 +40,9 @@ class Notebook(models.Model):
         help_text="Enter the password to access this page",
     )
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -75,6 +78,9 @@ class SharedNotebook(models.Model):
     shared_at = models.DateTimeField(auto_now_add=True)
     shareable_link = models.URLField(blank=True, null=True)
     can_edit = models.BooleanField(default=False)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def save(self, request=None, *args, **kwargs):
         if not self.shared_at:
@@ -111,6 +117,9 @@ class Page(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.notebook.title + " " + self.title
@@ -143,6 +152,9 @@ class SubPage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.page.title + " " + self.title
@@ -166,6 +178,9 @@ class Remainder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -211,6 +226,9 @@ class StickyNotes(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -230,6 +248,9 @@ class Activity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -246,11 +267,11 @@ class Todo(models.Model):
     todo_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=200)
     is_completed: bool = models.BooleanField(default=False)
-    # completed_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    # extra_fields = models.JSONField(blank=True, null=True, default=dict,)
+    extra_fields = models.JSONField(blank=True, null=True, default=dict)
 
     def __str__(self) -> str:
         return self.title
