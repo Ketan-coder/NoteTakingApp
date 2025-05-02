@@ -4,6 +4,7 @@ from .api import *
 
 router = DefaultRouter()
 router.register(r'profile', ProfileViewSet, basename='profile')
+router.register(r'userpreference', UserPreferencesViewSet, basename='userpreference')
 
 urlpatterns = [
     path('api-register/', RegisterView.as_view(), name='api-register'),

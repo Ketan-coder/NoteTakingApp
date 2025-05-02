@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-from .models import Profile
+from .models import Profile, UserPreferences
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -57,3 +57,10 @@ class ProfileSerializer(serializers.ModelSerializer):
             "username": obj.user.username,
             "lastLogin": obj.user.last_login.strftime('%Y-%m-%d %H:%M:%S') if obj.user.last_login else None,
         }
+    
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreferences
+        fields = '__all__'
+        read_only_fields = ['profile', 'created_at', 'id']
