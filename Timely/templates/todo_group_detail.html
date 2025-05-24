@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group.title }} - Todo Board{% endblock %}
+{% load static %}
+
+{% block head %}
+<!-- Styles -->
+<style>
+  .not-started { background-color: #6b7280; color: white; }
+  .in-progress { background-color: #3b82f6; color: white; }
+  .completed   { background-color: #10b981; color: white; }
+  .on-hold     { background-color: #fbbf24; color: black; }
+  .cancelled   { background-color: #ef4444; color: white; }
+
+  .todo-card { padding: 10px; border-radius: 8px; cursor: grab; }
+
+  /* Add padding inside modal content */
+  .modal-content {
+    padding: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1 class="display-4 d-inline-block text-white mb-20 m-3">{{ group.title }}</h1>
+
+<!-- Add Task Button -->
+<button class="btn btn-primary mb-10 m-4" data-bs-toggle="modal" data-bs-target="#addTaskModal" onclick="halfmoon.toggleModal('addTaskModal')">  
+  + Add Task
+</button>
+
+<!-- Columns using Halfmoon -->
+<div class="container-fluid">
+  <div class="row">
+
+    {% for status, todos in status_groups.items %}
+    <div class="col order-{{ forloop.counter }}">
+      <div class="card">
+        <h5 class="card-title text-center">{{ status }}</h5>
+        <div class="card-body bg-dark todo-column" id="list-{{ status|slugify }}" data-status="{{ status }}">  
+          {% for todo in todos %}
+          <div class="card todo-card mb-10 {{ status|slugify }}" data-id="{{ todo.todo_uuid }}" data-bs-toggle="modal" data-bs-target="#editModal-{{ todo.todo_uuid }}" onclick="openEditModal(this)">
+            <div class="content">
+              <strong>{{ todo.title }}</strong>
+              {% if todo.priority %}<span class="badge badge-danger float-right">{{ todo.priority }}</span>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal" id="addTaskModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <h5 class="modal-title">Add Task</h5>
+      <form method="POST" action="{% url 'add_task' group.todogroup_uuid %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" class="form-control" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="priority">Priority</label>
+          <select class="form-control" name="priority">
+            <option value="">None</option>
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Add</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit/Delete Modal -->
+<div class="modal" id="editModal-{{ todo.todo_uuid }}" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <h5 class="modal-title">Edit Task</h5>
+      <form id="editForm">
+        {% csrf_token %}
+        <input type="hidden" id="edit_todo_id" name="todo_uuid"> 
+        <div class="form-group">
+          <label for="edit_title">Title</label>
+          <input type="text" class="form-control" id="edit_title" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="edit_priority">Priority</label>
+          <select class="form-control" id="edit_priority" name="priority">
+            <option value="">None</option>
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="edit_due_date">Due Date</label>
+          <input type="date" class="form-control" id="edit_due_date" name="due_date">
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-danger" onclick="deleteTask()">Delete</button>
+        <button type="button" class="btn btn-link" onclick="halfmoon.toggleModal('editModal')">Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  const statusToClass = {
+    "Not Started": "not-started",
+    "In Progress": "in-progress",
+    "Completed": "completed",
+    "On Hold": "on-hold",
+    "Cancelled": "cancelled"
+  };
+
+  document.querySelectorAll('.todo-column').forEach(column => {
+    new Sortable(column, {
+      group: 'shared',
+      animation: 150,
+      onAdd: function (evt) {
+        const todoEl = evt.item;
+        const todoId = todoEl.dataset.id;
+        const newStatus = evt.to.dataset.status;
+
+        todoEl.classList.remove("not-started", "in-progress", "completed", "on-hold", "cancelled");
+        todoEl.classList.add(statusToClass[newStatus]);
+
+        fetch("{% url 'update_todo_status' %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ todo_uuid: todoId, new_status: newStatus })
+        }).then(res => {
+          if (!res.ok) alert("Failed to update status.");
+        });
+      }
+    });
+  });
+
+  function openEditModal(card) {
+    const todoId = card.dataset.id;
+    fetch(`/todo/${todoId}/json/`)
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('edit_todo_id').value = todoId;
+        document.getElementById('edit_title').value = data.title;
+        document.getElementById('edit_priority').value = data.priority || '';
+        document.getElementById('edit_due_date').value = data.due_date || '';
+        halfmoon.toggleModal('editModal');
+      });
+  }
+
+  document.getElementById('editForm').onsubmit = function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch(`/todo/edit/`, {
+      method: 'POST',
+      body: formData,
+      headers: { "X-CSRFToken": "{{ csrf_token }}" }
+    }).then(res => {
+      if (res.ok) location.reload();
+      else alert("Failed to update task.");
+    });
+  }
+
+  function deleteTask() {
+    const todoId = document.getElementById('edit_todo_id').value;
+    fetch(`/todo/${todoId}/delete/`, {
+      method: 'POST',
+      headers: { "X-CSRFToken": "{{ csrf_token }}" }
+    }).then(res => {
+      if (res.ok) location.reload();
+      else alert("Failed to delete task.");
+    });
+  }
+</script>
+{% endblock %}

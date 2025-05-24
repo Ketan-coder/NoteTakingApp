@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Notebook, Page, Remainder, Activity, StickyNotes, SharedNotebook, SubPage, Todo
+from .models import Notebook, Page, Remainder, Activity, StickyNotes, SharedNotebook, SubPage, Todo, TodoGroup
 
 @admin.register(Notebook)
 class NotebookAdmin(admin.ModelAdmin):
@@ -59,3 +59,9 @@ class TodoAdmin(admin.ModelAdmin):
     search_fields = ('title', 'author__user__first_name', 'author__user__last_name', 'author__user__id')
     ordering = ('-created_at', '-updated_at')
 
+@admin.register(TodoGroup)
+class TodoGroupAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_at', 'updated_at', 'author')
+    search_fields = ('title', 'author__user__first_name', 'author__user__last_name', 'author__user__id')
+    list_filter = ('created_at', 'updated_at')
+    ordering = ('-created_at', '-updated_at')

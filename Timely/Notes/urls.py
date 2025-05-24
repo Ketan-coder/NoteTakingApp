@@ -254,4 +254,14 @@ urlpatterns = [
         login_required(views.reset_notebook_password),
         name="reset_notebook_password",
     ),
+
+    path("todogroup/<uuid:group_uuid>/", views.todo_group_detail, name="todo_group_detail"),
+    path("todo/update-status/", views.update_todo_status, name="update_todo_status"),
+
+    path('todo/<uuid:group_uuid>/add/', views.add_task, name='add_task'),
+    path('todo/update-status/', views.update_todo_status, name='update_todo_status'),
+    path('todo/<uuid:todo_uuid>/json/', views.todo_json, name='todo_json'),
+    path('todo/edit/', views.edit_task, name='edit_task'),
+    path('todo/<uuid:todo_uuid>/delete/', views.delete_task, name='delete_task'),
+
 ]

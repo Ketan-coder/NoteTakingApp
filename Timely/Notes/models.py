@@ -1,4 +1,5 @@
 import datetime
+from tkinter.tix import STATUS
 
 from ckeditor.fields import RichTextField
 from django.contrib import messages
@@ -264,9 +265,28 @@ class Activity(models.Model):
 
 
 class Todo(models.Model):
+    STATUS_CHOICES = [
+        ("Not Started", "Not Started"),
+        ("In Progress", "In Progress"),
+        ("Completed", "Completed"),
+        ("On Hold", "On Hold"),
+        ("Cancelled", "Cancelled"),
+    ]
+    PRIORITY_CHOICES = [
+        ("Urgent", "Urgent"),
+        ("High", "High"),
+        ("Medium", "Medium"),
+        ("Low", "Low"),
+    ]
     todo_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=200)
     is_completed: bool = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="Not Started"
+    )
+    priority = models.CharField(
+        max_length=10, choices=PRIORITY_CHOICES, default="Medium"
+    )
     completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -282,4 +302,26 @@ class Todo(models.Model):
         super().save(*args, **kwargs)
         
     class Meta:
-        ordering = ["-is_completed"]
+        ordering = ["-created_at"]
+
+
+class TodoGroup(models.Model):
+    
+    todogroup_uuid = models.UUIDField(unique=True, blank=True, null=True)
+    title = models.CharField(max_length=200)
+    todos = models.ManyToManyField(Todo, related_name="todo_groups", blank=True)
+    shared_with = models.ManyToManyField(
+        Profile, related_name="shared_todo_groups", blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(blank=True, null=True, default=dict)
+
+    def __str__(self) -> str:
+        return self.title + " by " + self.author.firstName
+    
+    def save(self, *args, **kwargs):
+        if not self.todogroup_uuid:
+            self.todogroup_uuid = uuid.uuid4()
+        super().save(*args, **kwargs)
