@@ -1804,93 +1804,6 @@ def reset_notebook_password(request, notebook_id):
 
 
 # TODO GROUP
-# from django.shortcuts import render, get_object_or_404
-# from django.http import JsonResponse, HttpResponse
-# from django.views.decorators.csrf import csrf_exempt
-# from .models import TodoGroup, Todo
-# import json
-
-# # Main Kanban board view
-# def todo_group_detail(request, group_uuid):
-#     group = get_object_or_404(TodoGroup, todogroup_uuid=group_uuid, author__user=request.user)
-#     todos = group.todos.all()
-    
-#     status_groups = {
-#         "Not Started": [],
-#         "In Progress": [],
-#         "Completed": [],
-#         "On Hold": [],
-#         "Cancelled": [],
-#     }
-
-#     for todo in todos:
-#         status_groups[todo.status].append(todo)
-    
-#     return render(request, "todo_group_detail.html", {
-#         "group": group,
-#         "status_groups": status_groups,
-#     })
-
-
-# # Handles updating a todo's status via drag-and-drop (HTMX)
-# @csrf_exempt
-# def update_todo_status(request):
-#     if request.method == "POST":
-#         data = json.loads(request.body)
-#         todo_uuid = data.get("todo_uuid")
-#         new_status = data.get("new_status")
-#         try:
-#             todo = Todo.objects.get(todo_uuid=todo_uuid, author__user=request.user) 
-#             todo.status = new_status
-#             todo.save()
-#             return JsonResponse({"success": True}) # This can remain JsonResponse as it's not swapping HTML
-#         except Todo.DoesNotExist:
-#             return JsonResponse({"error": "Todo not found"}, status=404)
-#     return JsonResponse({"error": "Invalid request"}, status=400)
-
-
-# # Handles editing a task's title (and priority, if you re-add it) via HTMX
-# @csrf_exempt
-# def edit_task(request):
-#     if request.method == "POST":
-#         todo = get_object_or_404(Todo, todo_uuid=request.POST["todo_uuid"], author__user=request.user)
-#         todo.title = request.POST["title"]
-#         # If you re-add priority, uncomment this:
-#         # todo.priority = request.POST.get("priority", todo.priority) 
-#         todo.save()
-#         # Render the updated todo card HTML and return it
-#         return render(request, 'todo_app/partials/_todo_card.html', {'todo': todo})
-#     return JsonResponse({"error": "Invalid request"}, status=400)
-
-
-# # Handles deleting a task via HTMX
-# @csrf_exempt
-# def delete_task(request, todo_uuid):
-#     if request.method == "POST":
-#         todo = get_object_or_404(Todo, todo_uuid=todo_uuid, author__user=request.user)
-#         todo.delete()
-#         # Return an empty HttpResponse for HTMX to remove the element
-#         return HttpResponse(status=204) # 204 No Content is a good status for successful deletion
-#     return JsonResponse({"error": "Invalid request"}, status=400)
-
-# def add_task(request, group_uuid):
-#     if request.method == "POST":
-#         title = request.POST.get("title")
-#         priority = request.POST.get("priority")
-#         profile = Profile.objects.get(user=request.user)
-#         # due_date = request.POST.get("due_date") or None
-#         todo = Todo.objects.create(
-#             title=title,
-#             status="Not Started",
-#             author = profile,
-#             priority=priority,
-#             # due_date=due_date
-#         )
-#         group = get_object_or_404(TodoGroup, todogroup_uuid=group_uuid, author__user=request.user)
-#         group.todos.add(todo)
-#     return redirect("todo_group_detail", group_uuid=group_uuid)
-
-# TODO GROUP
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -1985,4 +1898,20 @@ def delete_task(request, todo_uuid):
         # Return an empty HttpResponse for HTMX to remove the element
         # return HttpResponse(status=204) # 204 No Content is a good status for successful deletion
         return HttpResponse("<p>Deleted</p>", content_type="text/html")  # Return empty content, not 204
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+@csrf_exempt
+def create_todo_group(request):
+    if request.method == "POST":
+        title = request.POST.get("title")
+        profile = Profile.objects.get(user=request.user)
+
+        group = TodoGroup.objects.create(
+            title=title,
+            author=profile
+        )
+        group.not_viewed_count = 0  # dummy default
+
+        html = render_to_string("partials/todo_group_card.html", {"group": group})
+        return HttpResponse(html)
     return JsonResponse({"error": "Invalid request"}, status=400)

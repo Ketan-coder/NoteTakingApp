@@ -1,0 +1,8 @@
+<a href="{% url 'todo_group_detail' group.todogroup_uuid %}" class="btn btn-secondary position-relative">
+  {{ group.title }}
+  {% if group.not_viewed_count > 0 %}
+  <span class="badge bg-secondary position-absolute top-0 start-100 translate-middle rounded-pill">
+    {{ group.not_viewed_count }}
+  </span>
+  {% endif %}
+</a>

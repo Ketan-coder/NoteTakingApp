@@ -255,13 +255,10 @@ urlpatterns = [
         name="reset_notebook_password",
     ),
 
+    path("todo-group/create/", views.create_todo_group, name="create_todo_group"),
     path("todogroup/<uuid:group_uuid>/", views.todo_group_detail, name="todo_group_detail"),
-    # path("todogroups/<uuid:todo_uuid>/", views.get_todo, name="get_todo"),
-    # path("todo/update-status/", views.update_todo_status, name="update_todo_status"),
-
     path('todo/<uuid:group_uuid>/add/', views.add_task, name='add_task'),
     path('todo/update-status/', views.update_todo_status, name='update_todo_status'),
-    # path('todo/<uuid:todo_uuid>/json/', views.todo_json, name='todo_json'),
     path('todo/edit/<uuid:todo_uuid>/', views.edit_task, name='edit_task'),
     path('todo/<uuid:todo_uuid>/delete/', views.delete_task, name='delete_task'),
 

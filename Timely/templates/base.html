@@ -283,7 +283,7 @@
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
   </div>
   <div class="offcanvas-body">
-    <div class="d-flex flex-row mb-3">
+    <div id="todo-group-list" class="d-flex flex-row mb-3">
       <div>Task Groups</div>
       <div class="vr mx-3"></div>
       {% for groups in todogroup %}
@@ -296,6 +296,9 @@
         {% endif %}
       </a>
       {% endfor %}
+      <button class="btn btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#addTodoGroupModal">
+        Add Group
+      </button>
     </div>
 
     <div class="card mw-100">
@@ -332,6 +335,34 @@
   </div>
 </div>
 
+  <div class="modal fade" id="addTodoGroupModal" tabindex="-1" role="dialog" aria-labelledby="addTodoGroupLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered w-400" role="document">
+    <div class="modal-content p-20">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addTodoGroupLabel"> Create Todo Group</h5>
+      </div>
+      <form
+          method="POST"
+          hx-post="{% url 'create_todo_group' %}"
+          hx-target="#todo-group-list"
+          hx-swap="beforeend"
+          hx-on::after-request="this.reset(); halfmoon.toggleModal('addTodoGroupModal')"
+        >
+          {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="title" class="required">Title</label>
+            <input type="text" id="title" name="title" required class="form-control" placeholder="e.g. Final Year Sprint">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="halfmoon.toggleModal('addTodoGroupModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
         
     {% block body %}
