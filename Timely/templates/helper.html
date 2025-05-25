@@ -64,13 +64,6 @@
   .htmx-request .htmx-indicator {
     display: inline-block;
   }
-
-  .progress-bar {
-    height: 6px;
-    background-color: var(--bs-primary);
-    margin-bottom: 0.75rem;
-    border-radius: 9999px;
-  }
 </style>
 {% endblock %}
 
@@ -90,9 +83,6 @@
     <div class="col">
       <div class="card h-100">
         <h5 class="card-title text-center">{{ status }}</h5>
-        <div class="progress-bar-container px-3">
-          <div class="progress-bar" id="progress-{{ status|slugify }}" style="width: {{ todos|length }}0%;"></div>
-        </div>
         <div class="card-body todo-column" id="list-{{ status|slugify }}" data-status="{{ status }}">
           {% for todo in todos %}
           <div class="card todo-card {{ status|slugify }}-bg" id="todo-{{ todo.todo_uuid }}" data-id="{{ todo.todo_uuid }}">
@@ -141,7 +131,7 @@
         hx-post="{% url 'add_task' group.todogroup_uuid %}"
         hx-target="#list-not-started"
         hx-swap="beforeend"
-        hx-on::after-request="this.reset(); halfmoon.toggleModal('addTaskModal'); updateProgressBars();"
+        hx-on::after-request="this.reset(); halfmoon.toggleModal('addTaskModal');"
       >
         {% csrf_token %}
         <div class="modal-body">
@@ -160,11 +150,11 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="halfmoon.toggleModal('addTaskModal')">
+          <button type="button" class="btn btn-secondary" onclick="halfmoon.toggleModal('addTaskModal')">
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">
-             Add Task
+            ➕ Add Task
           </button>
         </div>
       </form>
@@ -177,20 +167,6 @@
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-  function updateCardClass(todoEl, newStatus) {
-    const classes = ['not-started-bg', 'in-progress-bg', 'completed-bg', 'on-hold-bg', 'cancelled-bg'];
-    classes.forEach(cls => todoEl.classList.remove(cls));
-    todoEl.classList.add(`${newStatus.toLowerCase().replace(/ /g, '-')}-bg`);
-  }
-
-  function updateProgressBars() {
-    document.querySelectorAll('.todo-column').forEach(column => {
-      const bar = document.querySelector(`#progress-${column.dataset.status.toLowerCase().replace(/ /g, '-')}`);
-      const count = column.querySelectorAll('.todo-card').length;
-      bar.style.width = `${Math.min(count * 10, 100)}%`;
-    });
-  }
-
   document.querySelectorAll('.todo-column').forEach(column => {
     new Sortable(column, {
       group: 'shared',
@@ -198,12 +174,9 @@
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',
-
       onEnd: function (evt) {
-        const todoEl = evt.item;
-        const todoId = todoEl.dataset.id;
+        const todoId = evt.item.dataset.id;
         const newStatus = evt.to.dataset.status;
-
         fetch("/todo/update-status/", {
           method: "POST",
           headers: {
@@ -215,14 +188,10 @@
             new_status: newStatus
           })
         }).then(res => {
-          if (!res.ok) return alert("Failed to update status.");
-          updateCardClass(todoEl, newStatus);
-          updateProgressBars();
+          if (!res.ok) alert("Failed to update status.");
         });
       }
     });
   });
-
-  document.addEventListener("DOMContentLoaded", updateProgressBars);
 </script>
 {% endblock %}

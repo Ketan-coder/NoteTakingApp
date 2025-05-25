@@ -299,6 +299,7 @@ class Todo(models.Model):
     def save(self, *args, **kwargs):
         if not self.todo_uuid:
             self.todo_uuid = uuid.uuid4()
+        self.extra_fields['is_viewed'] = False
         super().save(*args, **kwargs)
         
     class Meta:
