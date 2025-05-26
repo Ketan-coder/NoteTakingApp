@@ -283,6 +283,7 @@
           if (!res.ok) return alert("Failed to update status.");
           updateCardClass(todoEl, newStatus);
           updateProgressBars();
+          notifyChange("Task updated");
         });
       }
     });
@@ -314,5 +315,24 @@
           targetElement.style.display = "block";
       }
   });
+
+  const groupUUID = "{{ group.todogroup_uuid }}";
+  const socket = new WebSocket(`ws://${window.location.host}/ws/todo/${groupUUID}/`);
+
+  socket.onmessage = function (e) {
+      const data = JSON.parse(e.data);
+      console.log("WebSocket message received:", data);
+
+      // You can add logic to re-render task list, show notifications, etc.
+      // For example:
+      location.reload(); // simple way to reflect changes
+  };
+
+  function notifyChange(message) {
+      socket.send(JSON.stringify({
+          message: message
+      }));
+  }
+
 </script>
 {% endblock %}

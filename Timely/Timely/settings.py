@@ -156,7 +156,8 @@ INSTALLED_APPS = [
     "django_htmx",
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders'
+    'corsheaders',
+    'channels',
 ]
 
 # CRISPY_TEMPLATE_PACK = "bootstrap4"
@@ -263,3 +264,12 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASS")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # For Testing
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
+ASGI_APPLICATION = 'Timely.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"  # good for dev
+    },
+}
