@@ -1915,3 +1915,72 @@ def create_todo_group(request):
         html = render_to_string("partials/todo_group_card.html", {"group": group})
         return HttpResponse(html)
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+def stopSharingTodoGroup(request, pk):
+    with transaction.atomic():  # Ensures everything commits or rolls back
+        todoGroup = get_object_or_404(TodoGroup, id=pk)
+
+        # Force refresh from DB
+        todoGroup.refresh_from_db()
+
+        # Clear shared users
+        todoGroup.shared_with.clear()
+        todoGroup.save()
+
+        # Log Activity
+        Activity.objects.create(
+            author=todoGroup.owner,
+            title="Stopped Sharing",
+            body=f"Stopped sharing todo group with title: {todoGroup.title}",
+        )
+
+    messages.success(request, "Todo group sharing has been stopped successfully!")
+    return redirect("home")
+
+
+def startSharingTodoGroup(request, pk):
+    todoGroup = get_object_or_404(TodoGroup, id=pk)
+    logined_profile = get_object_or_404(Profile, user=request.user)
+
+    if todoGroup.author != logined_profile:
+        messages.error(request, "You do not have permission to share this todo group.")
+        return redirect("home")
+
+    if request.method == "POST":
+        shared_emails = request.POST.get("shared_to_emails", "").strip()
+
+        if shared_emails:
+            email_list = [
+                email.strip() for email in shared_emails.split(",") if email.strip()
+            ]
+            valid_users = []
+            invalid_emails = []
+
+            for email in email_list:
+                shared_to_user = Profile.objects.filter(email=email).first()
+                if shared_to_user:
+                    valid_users.append(shared_to_user)
+                else:
+                    invalid_emails.append(email)
+
+            if valid_users:
+                todoGroup.shared_with.add(*valid_users)
+                todoGroup.save()
+                messages.success(
+                    request,
+                    f"Todo group shared successfully with {', '.join([user.email for user in valid_users])}!",
+                )
+
+            if invalid_emails:
+                messages.warning(
+                    request, f"These emails are invalid: {', '.join(invalid_emails)}"
+                )
+
+        else:
+            todoGroup.shared_with.clear()
+            todoGroup.save()
+            messages.success(request, "Todo group has been made public!")
+
+        return redirect("home")
+
+    return redirect("home")

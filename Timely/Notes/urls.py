@@ -261,5 +261,14 @@ urlpatterns = [
     path('todo/update-status/', views.update_todo_status, name='update_todo_status'),
     path('todo/edit/<uuid:todo_uuid>/', views.edit_task, name='edit_task'),
     path('todo/<uuid:todo_uuid>/delete/', views.delete_task, name='delete_task'),
-
+    path(
+        "startSharingTodoGroup/<int:pk>/",
+        login_required(views.startSharingTodoGroup),
+        name="startingSharedTodoGroup",
+    ),
+    path(
+        "stopSharingTodoGroup/<int:pk>/",
+        login_required(views.stopSharingTodoGroup),
+        name="stopSharingTodoGroup",
+    ),
 ]
