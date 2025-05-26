@@ -165,7 +165,7 @@ def index(request):
             group_count=Count("todo_groups")
         ).filter(group_count=0).order_by("-is_completed")
 
-        todogroups = TodoGroup.objects.filter(author=logined_profile).annotate(
+        todogroups = TodoGroup.objects.filter(Q(author=logined_profile) | Q(shared_with=logined_profile)).annotate(
                         not_viewed_count=Count(
                             'todos',
                             filter=Q(todos__extra_fields__is_viewed=False)
@@ -1813,9 +1813,22 @@ import json
 
 # Main Kanban board view
 def todo_group_detail(request, group_uuid):
-    group = get_object_or_404(TodoGroup, todogroup_uuid=group_uuid, author__user=request.user)
+    # Get the group if the user is author or in shared_with
+    group = get_object_or_404(
+        TodoGroup,
+        Q(author__user=request.user) | Q(shared_with__user=request.user),
+        todogroup_uuid=group_uuid
+    )
+
     todos = group.todos.all()
-    
+
+    # Mark all as viewed in bulk
+    for todo in todos:
+        if not todo.extra_fields.get("is_viewed"):
+            todo.extra_fields["is_viewed"] = True
+            todo.save(update_fields=["extra_fields"])
+
+    # Group todos by status
     status_groups = {
         "Not Started": [],
         "In Progress": [],
@@ -1825,8 +1838,8 @@ def todo_group_detail(request, group_uuid):
     }
 
     for todo in todos:
-        status_groups[todo.status].append(todo)
-    
+        status_groups.get(todo.status, []).append(todo)
+
     return render(request, "todo_group_detail.html", {
         "group": group,
         "status_groups": status_groups,
@@ -1846,7 +1859,11 @@ def add_task(request, group_uuid):
             author = profile,
             priority=priority,
         )
-        group = get_object_or_404(TodoGroup, todogroup_uuid=group_uuid, author__user=request.user)
+        group = get_object_or_404(
+            TodoGroup,
+            Q(author__user=request.user) | Q(shared_with__user=request.user),
+            todogroup_uuid=group_uuid
+        )
         group.todos.add(todo)
         
         # Render the new todo card HTML as a string and return it directly
@@ -1860,34 +1877,63 @@ def add_task(request, group_uuid):
 # Handles updating a todo's status via drag-and-drop (HTMX)
 @csrf_exempt
 def update_todo_status(request):
-    if request.method == "POST":
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    try:
         data = json.loads(request.body)
         todo_uuid = data.get("todo_uuid")
         new_status = data.get("new_status")
-        try:
-            todo = get_object_or_404(Todo, todo_uuid=todo_uuid, author__user=request.user) 
-            todo.status = new_status
-            todo.save()
-            return JsonResponse({"success": True})
-        except Todo.DoesNotExist:
-            return JsonResponse({"error": "Todo not found"}, status=404)
-    return JsonResponse({"error": "Invalid request"}, status=400)
+
+        todo = get_object_or_404(Todo, todo_uuid=todo_uuid)
+
+        # Check user has access to the group containing the todo
+        group = TodoGroup.objects.filter(
+            Q(author__user=request.user) | Q(shared_with__user=request.user),
+            todos=todo
+        ).first()
+
+        if not group:
+            return JsonResponse({"error": "Unauthorized access to this todo"}, status=403)
+
+        todo.status = new_status
+        todo.extra_fields["is_viewed"] = False  # Optional: mark as not viewed
+        todo.save(update_fields=["status", "extra_fields"])
+
+        return JsonResponse({"success": True})
+
+    except (json.JSONDecodeError, KeyError):
+        return JsonResponse({"error": "Malformed data"}, status=400)
 
 
 # Handles editing a task's title via HTMX
 @csrf_exempt
 def edit_task(request, todo_uuid):
-    if request.method == "POST":
-        todo = get_object_or_404(Todo, todo_uuid=todo_uuid, author__user=request.user)
-        todo.title = request.POST["title"]
-        # If you decide to re-add priority to the UI, uncomment this:
-        # todo.priority = request.POST.get("priority", todo.priority) 
-        todo.save()
-        # Render the updated todo card HTML as a string and return it directly
-        rendered_todo_card = render_to_string('partials/_todo_card.html', {'todo': todo}, request=request)
-        return HttpResponse(rendered_todo_card)
-    return JsonResponse({"error": "Invalid request"}, status=400)
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
 
+    title = request.POST.get("title", "").strip()
+    if not title:
+        return JsonResponse({"error": "Title is required"}, status=400)
+
+    todo = get_object_or_404(Todo, todo_uuid=todo_uuid)
+
+    # Verify ownership or shared permission
+    group = TodoGroup.objects.filter(
+        Q(author__user=request.user) | Q(shared_with__user=request.user),
+        todos=todo
+    ).first()
+
+    if not group:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    todo.title = title
+    todo.extra_fields['is_viewed'] = False
+    todo.save(update_fields=["title", "extra_fields"])
+
+    # Render the updated todo card partial
+    html = render_to_string('partials/_todo_card.html', {'todo': todo}, request=request)
+    return HttpResponse(html)
 
 # Handles deleting a task via HTMX
 @csrf_exempt
@@ -1920,6 +1966,10 @@ def stopSharingTodoGroup(request, pk):
     with transaction.atomic():  # Ensures everything commits or rolls back
         todoGroup = get_object_or_404(TodoGroup, id=pk)
 
+        if todoGroup.author != request.user.profile:
+            messages.error(request, "You do not have permission to stop sharing this todo group.")
+            return redirect("todo_group_detail", group_uuid=todoGroup.todogroup_uuid)
+
         # Force refresh from DB
         todoGroup.refresh_from_db()
 
@@ -1929,13 +1979,13 @@ def stopSharingTodoGroup(request, pk):
 
         # Log Activity
         Activity.objects.create(
-            author=todoGroup.owner,
+            author=todoGroup.author,
             title="Stopped Sharing",
             body=f"Stopped sharing todo group with title: {todoGroup.title}",
         )
 
     messages.success(request, "Todo group sharing has been stopped successfully!")
-    return redirect("home")
+    return redirect("todo_group_detail", group_uuid=todoGroup.todogroup_uuid)
 
 
 def startSharingTodoGroup(request, pk):
@@ -1944,7 +1994,7 @@ def startSharingTodoGroup(request, pk):
 
     if todoGroup.author != logined_profile:
         messages.error(request, "You do not have permission to share this todo group.")
-        return redirect("home")
+        return redirect("todo_group_detail", group_uuid=todoGroup.todogroup_uuid)
 
     if request.method == "POST":
         shared_emails = request.POST.get("shared_to_emails", "").strip()
@@ -1981,6 +2031,6 @@ def startSharingTodoGroup(request, pk):
             todoGroup.save()
             messages.success(request, "Todo group has been made public!")
 
-        return redirect("home")
+        return redirect("todo_group_detail", group_uuid=todoGroup.todogroup_uuid)
 
-    return redirect("home")
+    return redirect("todo_group_detail", group_uuid=todoGroup.todogroup_uuid)
