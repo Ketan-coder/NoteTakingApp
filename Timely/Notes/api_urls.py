@@ -8,6 +8,7 @@ router.register(r'pages', PageViewSet, basename='page')
 router.register(r'subpages', SubPageViewSet, basename='subpage')
 router.register(r'remainders', RemainderViewSet, basename='remainder')
 router.register(r'todos', TodoViewSet, basename='todo')
+router.register(r'todogroup', TodoGroupViewSet, basename='todogroup')
 router.register(r'sharednotebooks', SharedNotebookViewSet, basename='sharednotebook')
 
 urlpatterns = [

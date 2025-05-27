@@ -120,7 +120,27 @@ class TodoSerializer(serializers.ModelSerializer):
         profile = Profile.objects.get(user=request.user)  # Get profile of logged-in user
         validated_data['author'] = profile  # Assign logged-in user as author
         return super().create(validated_data)
-    
+
+class TodoGroupSerializer(serializers.ModelSerializer):
+    todos = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TodoGroup
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'author', 'todogroup_uuid','id']
+
+    def create(self, validated_data):
+        request = self.context.get('request')  # Get request from context
+        profile = Profile.objects.get(user=request.user)  # Get profile of logged-in user
+        validated_data['author'] = profile  # Assign logged-in user as author
+        return super().create(validated_data)
+
+    def get_todos(self, obj):
+        """
+        Return a list of all todo UUIDs associated with this todo group.
+        """
+        return obj.todos.values_list("todo_uuid", flat=True)
+
 class SharedNotebookSerializer(serializers.ModelSerializer):
     class Meta:
         model = SharedNotebook

@@ -597,7 +597,17 @@ class TodoViewSet(viewsets.ModelViewSet):
         if not profile:
             return Todo.objects.none()
         # return Todo.objects.filter(author=profile)
-        queryset = Todo.objects.filter(author=profile).order_by('-created_at')
+
+        # queryset = Todo.objects.filter(author=profile).order_by('-created_at')
+        grouped_todo_ids = TodoGroup.objects.filter(
+            Q(author=profile) | Q(shared_with=profile)
+        ).values_list('todos__id', flat=True).exclude(todos__id__isnull=True).distinct()
+
+        queryset = Todo.objects.filter(
+                    author=profile
+                ).exclude(
+                    id__in=grouped_todo_ids
+                ).order_by('-created_at')
 
         # Filtering via query parameters
         title = self.request.query_params.get('title')
@@ -668,6 +678,125 @@ class TodoViewSet(viewsets.ModelViewSet):
 
         instance.delete()
         return Response({"message": "Todo deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+class TodoGroupViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing todo groups.
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = TodoGroupSerializer
+    pagination_class = StandardResultsSetPagination
+    lookup_field = 'id'  # Default lookup field
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title','todos__title']  # Enables search via query parameter: ?search=<title>
+
+    def get_object(self):
+        """
+        Retrieve a single todo group by either 'id' or 'uuid'.
+        """
+        queryset = self.get_queryset()
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        if not lookup_value:
+            raise NotFound({"error": "No lookup value provided"})
+
+        # Try fetching by ID (integer)
+        if str(lookup_value).isdigit():
+            return get_object_or_404(queryset, id=int(lookup_value))
+
+        # Try fetching by UUID
+        try:
+            return get_object_or_404(queryset, todogroup_uuid=lookup_value)
+        except ValueError:
+            raise NotFound({"error": "Invalid UUID format"})
+        
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new todo group and assign it to the authenticated user.
+        """
+        user = request.user
+        profile = Profile.objects.filter(user=user).first()
+        if not profile:
+            return Response({"error": "User profile not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(author=profile)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_queryset(self):
+        """
+        Retrieve all todo groups belonging to the authenticated user.
+        """
+        user = self.request.user
+        profile = Profile.objects.filter(user=user).first()
+        if not profile:
+            return TodoGroup.objects.none()
+        
+        # return TodoGroup.objects.filter(author=profile)
+        queryset = TodoGroup.objects.filter(Q(author=profile) | Q(shared_with=profile)).order_by('-created_at')
+
+        # Filtering via query parameters
+        title = self.request.query_params.get('title')
+        todos_title = self.request.query_params.get('todos__title')
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if todos_title:
+            queryset = queryset.filter(todos__title__icontains=todos_title)
+
+        return queryset
+    
+    def update(self, request, *args, **kwargs):
+        """
+        Update an existing todo group. Only the owner can update it.
+        """
+        instance = self.get_object()
+        profile = Profile.objects.get(user=request.user)
+
+        if instance.author != profile:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Partially update a todo group (e.g., updating only the title).
+        """
+        instance = self.get_object()
+        profile = Profile.objects.get(user=request.user)
+
+        if instance.author != profile:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete an existing todo group. Only the owner can delete it.
+        """
+        instance = self.get_object()
+        profile = Profile.objects.get(user=request.user)
+
+        if instance.author != profile:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        instance.delete()
+        return Response({"message": "Todo group deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 class SharedNotebookViewSet(viewsets.ModelViewSet):
     """
