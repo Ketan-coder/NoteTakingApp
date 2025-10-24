@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ group.title }} - Todo Board{% endblock %}
+
+{% block head %}
+<style>
+  .not-started-bg { background-color: #94a3b8; color: white; }
+  .in-progress-bg { background-color: #60a5fa; color: white; }
+  .completed-bg   { background-color: #34d399; color: white; }
+  .on-hold-bg     { background-color: #fcd34d; color: black; }
+  .cancelled-bg   { background-color: #f87171; color: white; }
+
+  .todo-card {
+    padding: 0.75rem;
+    border-radius: var(--bs-card-border-radius);
+    cursor: grab;
+    margin-bottom: 1rem;
+    transition: transform 0.1s ease-in-out;
+  }
+  .todo-card:active {
+    cursor: grabbing;
+    transform: scale(1.02);
+  }
+
+  .todo-column {
+    min-height: 70vh;
+    background-color: var(--bs-dark);
+    padding: var(--bs-card-spacer-y);
+    border-radius: var(--bs-border-radius-lg);
+    box-shadow: var(--bs-box-shadow-lg);
+  }
+
+  .form-inline-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .form-inline-group .form-control {
+    flex-grow: 1;
+    min-width: 100px;
+  }
+
+  .btn-icon-only {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 36px;
+    padding: 0.5rem;
+  }
+
+  .btn-icon-only svg {
+    width: 1em;
+    height: 1em;
+    fill: #ef4444;
+  }
+
+  .htmx-indicator {
+    display: none;
+    margin-left: 10px;
+    color: var(--bs-primary);
+  }
+  .htmx-request .htmx-indicator {
+    display: inline-block;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+  <div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <h1 class="display-4 text-white">{{ group.title }}</h1>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal" onclick="halfmoon.toggleModal('addTaskModal')">
+        + Add Task
+      </button>
+    </div>
+  </div>
+
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
+    {% for status, todos in status_groups.items %}
+    <div class="col">
+      <div class="card h-100">
+        <h5 class="card-title text-center">{{ status }}</h5>
+        <div class="card-body todo-column" id="list-{{ status|slugify }}" data-status="{{ status }}">
+          {% for todo in todos %}
+          <div class="card todo-card {{ status|slugify }}-bg" id="todo-{{ todo.todo_uuid }}" data-id="{{ todo.todo_uuid }}">
+            <form
+              hx-post="{% url 'edit_task' todo_uuid=todo.todo_uuid %}"
+              hx-trigger="keyup changed delay:500ms from:input"
+              hx-target="#todo-{{ todo.todo_uuid }}"
+              hx-swap="outerHTML"
+              class="form-inline-group"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="todo_uuid" value="{{ todo.todo_uuid }}">
+              <div class="input-group">
+                <input type="text" name="title" class="form-control" value="{{ todo.title }}" placeholder="Task title">
+                <button type="button" class="btn btn-sm btn-secondary btn-icon-only"
+                        hx-post="{% url 'delete_task' todo_uuid=todo.todo_uuid %}"
+                        hx-target="#todo-{{ todo.todo_uuid }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Are you sure you want to delete this task?">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="htmx-indicator">Saving...</span>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered w-400" role="document">
+    <div class="modal-content p-20">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addTaskModalLabel">📝 Add New Task</h5>
+        <button type="button" class="close" aria-label="Close" onclick="halfmoon.toggleModal('addTaskModal')">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form
+        hx-post="{% url 'add_task' group.todogroup_uuid %}"
+        hx-target="#list-not-started"
+        hx-swap="beforeend"
+        hx-on::after-request="this.reset(); halfmoon.toggleModal('addTaskModal');"
+      >
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="title" class="required">Title</label>
+            <input type="text" id="title" name="title" required class="form-control" placeholder="Enter task title">
+          </div>
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority" class="form-control">
+              <option value="">Select Priority</option>
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="halfmoon.toggleModal('addTaskModal')">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            ➕ Add Task
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  document.querySelectorAll('.todo-column').forEach(column => {
+    new Sortable(column, {
+      group: 'shared',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      onEnd: function (evt) {
+        const todoId = evt.item.dataset.id;
+        const newStatus = evt.to.dataset.status;
+        fetch("/todo/update-status/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({
+            todo_uuid: todoId,
+            new_status: newStatus
+          })
+        }).then(res => {
+          if (!res.ok) alert("Failed to update status.");
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}

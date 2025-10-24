@@ -142,6 +142,7 @@
     <link href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/css/halfmoon.min.css" rel="stylesheet" integrity="sha256-SsJizWSIG9JT9Qxbiy8xnYJfjCAkhEQ0hihxRn7jt2M=" crossorigin="anonymous">
     <link href="{% static 'vendors/css/halfmoon.css' %}" rel="stylesheet" >
     <script src="{% static 'vendors/js/htmx.min.js' %}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha256-CDOy6cOibCWEdsRiZuaHf8dSGGJRYuBGC+mjoJimHGw=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     {% comment %} <link href="https://fonts.googleapis.com/css?family=Roboto|Lora|Poppins" rel="stylesheet"> {% endcomment %}
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700;900&display=swap" rel="stylesheet">
@@ -282,6 +283,24 @@
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
   </div>
   <div class="offcanvas-body">
+    <div id="todo-group-list" class="d-flex flex-row mb-3">
+      <div>Task Groups</div>
+      <div class="vr mx-3"></div>
+      {% for groups in todogroup %}
+      <a href="{% url 'todo_group_detail' groups.todogroup_uuid %}" class="btn btn-secondary position-relative ms-2">
+        {{ groups.title }}
+        {% if groups.not_viewed_count > 0 %}
+        <span class="badge bg-secondary position-absolute top-0 start-100 translate-middle rounded-pill">
+          {{ groups.not_viewed_count }}
+        </span>
+        {% endif %}
+      </a>
+      {% endfor %}
+      <button class="btn btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#addTodoGroupModal">
+        Add Group
+      </button>
+    </div>
+
     <div class="card mw-100">
       <div class="card-header">
         <div class="hstack gap-2">
@@ -304,8 +323,9 @@
       </div>
 
       <!-- Todo List -->
-      <div class="card-body">
+      <div class="card-body"> 
         <div class="vstack gap-1 border-top mt-3" id="todo-list">
+          
           {% for todo in todos %}
             {% include 'partials/todo_item.html' %}
           {% endfor %}
@@ -315,6 +335,34 @@
   </div>
 </div>
 
+  <div class="modal fade" id="addTodoGroupModal" tabindex="-1" role="dialog" aria-labelledby="addTodoGroupLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered w-400" role="document">
+    <div class="modal-content p-20">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addTodoGroupLabel"> Create Todo Group</h5>
+      </div>
+      <form
+          method="POST"
+          hx-post="{% url 'create_todo_group' %}"
+          hx-target="#todo-group-list"
+          hx-swap="beforeend"
+          hx-on::after-request="this.reset(); halfmoon.toggleModal('addTodoGroupModal')"
+        >
+          {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="title" class="required">Title</label>
+            <input type="text" id="title" name="title" required class="form-control" placeholder="e.g. Final Year Sprint">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="halfmoon.toggleModal('addTodoGroupModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
         
     {% block body %}
@@ -322,7 +370,7 @@
 	{% endblock body %}
 
     
-
+    <script src="https://cdn.jsdelivr.net/npm/halfmoon@2.0.1/js/halfmoon.min.js"></script>
     <!-- Option 1: Bootstrap JS bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>

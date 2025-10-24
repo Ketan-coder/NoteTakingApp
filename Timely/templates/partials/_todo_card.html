@@ -1,0 +1,28 @@
+{# todo_app/partials/_todo_card.html #}
+{% load static %}
+<div class="card todo-card {{ todo.status|slugify }}-bg"
+     data-id="{{ todo.todo_uuid }}" id="todo-{{ todo.todo_uuid }}">
+    <form
+              hx-post="{% url 'edit_task' todo_uuid=todo.todo_uuid %}"
+              hx-trigger="keyup changed delay:500ms from:input"
+              hx-target="#todo-{{ todo.todo_uuid }}"
+              hx-swap="outerHTML"
+              class="form-inline-group"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="todo_uuid" value="{{ todo.todo_uuid }}">
+              <div class="input-group">
+                <input type="text" name="title" class="form-control" value="{{ todo.title }}" placeholder="Task title">
+                <button type="button" class="btn btn-sm btn-secondary btn-icon-only"
+                        hx-post="{% url 'delete_task' todo_uuid=todo.todo_uuid %}"
+                        hx-target="#todo-{{ todo.todo_uuid }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Are you sure you want to delete this task?">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="htmx-indicator">Saving...</span>
+            </form>
+</div>

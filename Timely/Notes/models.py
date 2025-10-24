@@ -1,4 +1,5 @@
 import datetime
+from tkinter.tix import STATUS
 
 from ckeditor.fields import RichTextField
 from django.contrib import messages
@@ -9,6 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from Users.models import Profile
 import uuid
+from datetime import timezone as dt_timezone
 
 # PRIORITY_LIST = [
 #     ('Important','Important'),
@@ -39,6 +41,9 @@ class Notebook(models.Model):
         help_text="Enter the password to access this page",
     )
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -74,6 +79,9 @@ class SharedNotebook(models.Model):
     shared_at = models.DateTimeField(auto_now_add=True)
     shareable_link = models.URLField(blank=True, null=True)
     can_edit = models.BooleanField(default=False)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def save(self, request=None, *args, **kwargs):
         if not self.shared_at:
@@ -110,6 +118,9 @@ class Page(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.notebook.title + " " + self.title
@@ -142,6 +153,9 @@ class SubPage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.page.title + " " + self.title
@@ -165,31 +179,45 @@ class Remainder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
 
-    # def save(self, *args, **kwargs):
-    #     # if not self.updated_at:
-    #     #     self.updated_at = timezone.now() + timezone.timedelta(hours=5, minutes=30)
-    #     if self.alert_time < timezone.now() + datetime.timedelta(hours=5, minutes=30):
-    #         self.is_over = True
-    #     else:
-    #         self.is_over = False
-    #     super().save(*args, **kwargs)
     def save(self, *args, **kwargs):
-        if self.alert_time and timezone.is_naive(self.alert_time):
-            self.alert_time = timezone.make_aware(
-                self.alert_time, timezone.get_current_timezone()
-            )
+        # Ensure `alert_time` is timezone-aware and stored in UTC
+        if self.alert_time:
+            if timezone.is_naive(self.alert_time):
+                # Assume naive input is in current system/local timezone (e.g. from admin panel)
+                self.alert_time = timezone.make_aware(
+                    self.alert_time, timezone.get_current_timezone()
+                )
+            # Convert to UTC
+            self.alert_time = self.alert_time.astimezone(dt_timezone.utc)
 
-        # Ensure timezone-aware comparison
-        now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
+        # Compare in UTC
+        self.is_over = self.alert_time < timezone.now()
 
-        self.is_over = self.alert_time < now_with_offset
         if not self.remainder_uuid:
             self.remainder_uuid = uuid.uuid4()
+
         super().save(*args, **kwargs)
+        
+    # def save(self, *args, **kwargs):
+    #     if self.alert_time and timezone.is_naive(self.alert_time):
+    #         self.alert_time = timezone.make_aware(
+    #             self.alert_time, timezone.get_current_timezone()
+    #         )
+
+    #     # Ensure timezone-aware comparison
+    #     now_with_offset = timezone.now() + datetime.timedelta(hours=5, minutes=30)
+
+    #     self.is_over = self.alert_time < now_with_offset
+    #     if not self.remainder_uuid:
+    #         self.remainder_uuid = uuid.uuid4()
+    #     super().save(*args, **kwargs)
 
 
 class StickyNotes(models.Model):
@@ -199,6 +227,9 @@ class StickyNotes(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -218,6 +249,9 @@ class Activity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(
+        blank=True, null=True, default=dict, 
+    )  # For any extra fields you want to add
 
     def __str__(self) -> str:
         return self.title
@@ -231,12 +265,33 @@ class Activity(models.Model):
 
 
 class Todo(models.Model):
+    STATUS_CHOICES = [
+        ("Not Started", "Not Started"),
+        ("In Progress", "In Progress"),
+        ("Completed", "Completed"),
+        ("On Hold", "On Hold"),
+        ("Cancelled", "Cancelled"),
+    ]
+    PRIORITY_CHOICES = [
+        ("Urgent", "Urgent"),
+        ("High", "High"),
+        ("Medium", "Medium"),
+        ("Low", "Low"),
+    ]
     todo_uuid:uuid = models.UUIDField(unique=True, blank=True, null=True)
     title: str = models.CharField(max_length=200)
     is_completed: bool = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="Not Started"
+    )
+    priority = models.CharField(
+        max_length=10, choices=PRIORITY_CHOICES, default="Medium"
+    )
+    completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(blank=True, null=True, default=dict)
 
     def __str__(self) -> str:
         return self.title
@@ -244,7 +299,30 @@ class Todo(models.Model):
     def save(self, *args, **kwargs):
         if not self.todo_uuid:
             self.todo_uuid = uuid.uuid4()
+        self.extra_fields['is_viewed'] = False
         super().save(*args, **kwargs)
         
     class Meta:
-        ordering = ["-is_completed"]
+        ordering = ["-created_at"]
+
+
+class TodoGroup(models.Model):
+    
+    todogroup_uuid = models.UUIDField(unique=True, blank=True, null=True)
+    title = models.CharField(max_length=200)
+    todos = models.ManyToManyField(Todo, related_name="todo_groups", blank=True)
+    shared_with = models.ManyToManyField(
+        Profile, related_name="shared_todo_groups", blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    extra_fields = models.JSONField(blank=True, null=True, default=dict)
+
+    def __str__(self) -> str:
+        return self.title + " by " + self.author.firstName
+    
+    def save(self, *args, **kwargs):
+        if not self.todogroup_uuid:
+            self.todogroup_uuid = uuid.uuid4()
+        super().save(*args, **kwargs)

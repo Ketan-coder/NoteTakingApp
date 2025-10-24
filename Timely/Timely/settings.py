@@ -59,7 +59,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = "Timely.urls"
@@ -131,8 +131,8 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en-us"
 
 # kolkata time zone
-TIME_ZONE = "Asia/Kolkata"
-# TIME_ZONE = 'UTC'
+# TIME_ZONE = "Asia/Kolkata"
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -165,10 +165,26 @@ INSTALLED_APPS = [
     "Notes.apps.NotesConfig",
     "crispy_forms",
     "django_htmx",
-    "corsheaders",
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders'
 ]
 
-CRISPY_TEMPLATE_PACK = "bootstrap4"
+# CRISPY_TEMPLATE_PACK = "bootstrap4"
+
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
+
 
 # ----------------Leave this for STATICFILES_DIRS with the below code----------------\/
 
@@ -206,10 +222,32 @@ TEMPLATES = [
 CORS_ALLOW_ALL_ORIGINS = True  
 
 # OR for specific allowed origin (safe for prod):
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:64640",
-#     "https://timely.pythonanywhere.com/",
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:64640",
+    "https://timely.pythonanywhere.com/",
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+]
+# For development (unsafe for prod):
+# CORS_ALLOW_ALL_ORIGINS = True  
+
+# OR for specific allowed origin (safe for prod):
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:64640",
+    "https://timely.pythonanywhere.com",
+]
 
 # CORS_ALLOW_METHODS = [
 #     "DELETE",
