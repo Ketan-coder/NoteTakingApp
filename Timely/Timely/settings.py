@@ -86,13 +86,24 @@ WSGI_APPLICATION = "Timely.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#         "ATOMIC_REQUESTS": True,
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        "ATOMIC_REQUESTS": True,
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv("DB_DB","NoteTakingDB"),
+            'USER': os.getenv("DB_USER"),
+            'PASSWORD': os.getenv("DB_PASSWORD"),
+            'HOST': os.getenv("DB_HOST", "localhost"),  # Default to localhost if not set
+            'PORT': os.getenv("DB_PORT", "5432"),      # Default to 5432 if not set
+        }
     }
-}
 
 
 # Password validation
@@ -192,27 +203,27 @@ TEMPLATES = [
 ]
 
 # For development (unsafe for prod):
-# CORS_ALLOW_ALL_ORIGINS = True  
+CORS_ALLOW_ALL_ORIGINS = True  
 
 # OR for specific allowed origin (safe for prod):
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:64640",
-    "https://timely.pythonanywhere.com/",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:64640",
+#     "https://timely.pythonanywhere.com/",
+# ]
 
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
+# CORS_ALLOW_METHODS = [
+#     "DELETE",
+#     "GET",
+#     "OPTIONS",
+#     "PATCH",
+#     "POST",
+#     "PUT",
+# ]
 
-CORS_ALLOW_HEADERS = [
-    "content-type",
-    "authorization",
-]
+# CORS_ALLOW_HEADERS = [
+#     "content-type",
+#     "authorization",
+# ]
 
 X_FRAME_OPTIONS = "ALLOW-FROM https://timely.pythonanywhere.com/"
 

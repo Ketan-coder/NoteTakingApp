@@ -104,3 +104,4 @@ xhtml2pdf==0.2.15
 zipp==3.21.0
 zopfli==0.2.3
 zstandard==0.23.0
+fastmcp==2.12.5
